@@ -1,7 +1,9 @@
+<!DOCTYPE html>
 <html>
   <head>
     <title> TA Hours Queue </title>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="script.js"></script>
   </head>
   <body>
     <!--- Navbar --->
@@ -17,12 +19,20 @@
           <li><a href="#Contact"> Contact </a></li>
         </ul>
       </div>
-    </div>
+    </div> 
     <!--- Body --->
     <br>
     <br>
     <div>
       <center><h1> Session #1: </h1></center>
+      <!--- Form --->
+        First name:<br>
+        <input type="text" id="firstName" name="firstname" value="Mickey">
+        <br>
+        Last name:<br>
+        <input type="text" id="lastName" name="lastname" value="Mouse">
+        <br><br>
+        <button onclick="formSubmit()">Try it</button>
     </div>
   </body>
 </html>
