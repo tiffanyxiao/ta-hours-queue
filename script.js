@@ -9,7 +9,10 @@ function entry(firstName, lastName) {
 // define a function that will turn an entry into text
 function entryToText(newEntry){
     var nameNode = document.createTextNode(newEntry.eFullName);
-    document.body.appendChild(nameNode);
+    // add text node 
+    document.getElementById('queueEntries').appendChild(document.createTextNode(newEntry.eFullName));
+    // add linebreak 
+    document.getElementById('queueEntries').appendChild(document.createElement("br"));
 }
 
 // create a new entry based off of form 
@@ -20,7 +23,6 @@ function createEntry(){
 
     // create an entry object instance
     let newEntry = new entry(firstNameE, lastNameE);
-    console.log(newEntry.eFirstName);
     return newEntry;
 }
 
