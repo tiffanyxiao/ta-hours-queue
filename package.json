@@ -1,0 +1,17 @@
+{
+  "name": "ta-queue-hours-api",
+  "version": "1.0.0",
+  "description": "Express REST API for ta-queue-hours project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tiffany Xiao",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "md5": "^2.2.1",
+    "sqlite3": "^4.1.0"
+  }
+}
