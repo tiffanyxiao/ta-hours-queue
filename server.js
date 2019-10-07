@@ -2,8 +2,6 @@
 let express = require("express");
 let app = express();
 let db = require("./database.js");
-let md5 = require("md5")
-
 let bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -55,24 +53,28 @@ app.get("/api/queue/:first_name", (req, res, next) => {
 
 // endpoint to post a person 
 app.post("/api/queue/", (req, res, next) => {
-    console.log("hello");
     let errors=[];
-    if (!req.body.first_name){
+    // :happiny: :fried egg:
+    if (!req.query.first_name){
         errors.push("No first name specified");
     }
-    if (!req.body.last_name){
+    if (!req.query.last_name){
         errors.push("No last name specified");
+    }
+    if (!req.query.time){
+        errors.push("No time specified");
     }
     if (errors.length){
         res.status(400).json({"error":errors.join(",")});
         return;
     }
     let data = {
-        first_name: req.body.first_name,
-        last_name: req.body.last_name
+        first_name: req.query.first_name,
+        last_name: req.query.last_name,
+        time: req.query.time
     }
-    let sql ='INSERT INTO queue(first_name, last_name) VALUES (?,?)'
-    let params =[data.first_name, data.last_name];
+    let sql ='INSERT INTO queue(first_name, last_name, time) VALUES (?,?, ?)'
+    let params =[data.first_name, data.last_name, data.time];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})
@@ -83,6 +85,47 @@ app.post("/api/queue/", (req, res, next) => {
             "data": data,
             "id" : this.lastID
         })
+    });
+})
+
+// endpoint to update a person 
+app.patch("/api/queue/:first_name", (req, res, next) => {
+    var data = {
+        first_name: req.query.first_name,
+        last_name: req.query.last_name,
+        time: req.query.time
+    }
+    db.run(
+        `UPDATE queue set 
+           first_name = COALESCE(?,first_name), 
+           last_name = COALESCE(?,last_name), 
+           time = COALESCE(?,time) 
+           WHERE first_name = ?`,
+        [data.first_name, data.last_name, data.time, req.params.first_name],
+        function (err, result) {
+            if (err){
+                res.status(400).json({"error": res.message})
+                return;
+            }
+            res.json({
+                message: "success",
+                data: data,
+                changes: this.changes
+            })
+    });
+})
+
+// endpoint to delete a person 
+app.delete("/api/queue/:first_name", (req, res, next) => {
+    db.run(
+        'DELETE FROM queue WHERE first_name = ?',
+        req.params.first_name,
+        function (err, result) {
+            if (err){
+                res.status(400).json({"error": res.message})
+                return;
+            }
+            res.json({"message":"deleted", changes: this.changes})
     });
 })
 

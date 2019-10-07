@@ -11,7 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
-    "md5": "^2.2.1",
-    "sqlite3": "^4.1.0"
+    "request": "^2.88.0",
+    "sqlite3": "^4.1.0",
+    "body-parser": "^1.19.0"
   }
 }
