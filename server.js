@@ -12,6 +12,9 @@ let HTTP_PORT = 8000;
 // Start server
 app.listen(process.env.PORT || HTTP_PORT);
 
+// serving static files in express
+app.use(express.static('public'));
+
 // Root endpoint
 app.get("/", (req, res, next) => {
     res.json({"message":"Ok"});
