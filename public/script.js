@@ -1,23 +1,17 @@
-let request = new XMLHttpRequest();
+//let url = "https://mysterious-headland-07008.herokuapp.com/";
+let url = "http://localhost:8000/";
 
-// Open a new connection, using the GET request on the URL endpoint
-request.open('GET', 'https://mysterious-headland-07008.herokuapp.com/api/queue', true);
 
-request.onload = function() {
-  // Begin accessing JSON data here
+function httpGetAsync(theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+    xmlHttp.send(null);
 }
-
-// Send request
-request.send();
-
-// Begin accessing JSON data here
-let data = JSON.parse(this.response);
-
-data.forEach(person => {
-  // Log each movie's title
-  console.log(person.first_name)
-})
-
 
 // create a entry box object
 function entry(firstName, lastName, time) {

@@ -1,7 +1,7 @@
 let request = new XMLHttpRequest();
 
 // Open a new connection, using the GET request on the URL endpoint
-request.open('GET', 'https://mysterious-headland-07008.herokuapp.com/api/queue', true);
+request.open('GET', 'http://localhost:8000/api/queue', true);
 
 request.onload = function() {
   // Begin accessing JSON data here

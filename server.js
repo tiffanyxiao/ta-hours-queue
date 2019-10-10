@@ -3,8 +3,11 @@ let express = require("express");
 let app = express();
 let db = require("./database.js");
 let bodyParser = require("body-parser");
+let cors = require('cors');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.use(cors());
 
 // Server port
 let HTTP_PORT = 8000;
