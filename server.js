@@ -25,7 +25,7 @@ app.get("/", (req, res, next) => {
 
 // endpoint for whole queue
 app.get("/api/queue", (req, res, next) => {
-    let sql = "select * from queue";
+    let sql = "select * from queue order by time asc";
     let params = [];
     db.all(sql, params, (err, rows) => {
         if (err) {
@@ -39,10 +39,10 @@ app.get("/api/queue", (req, res, next) => {
       });
 });
 
-// endpoint for getting by first name 
-app.get("/api/queue/:first_name", (req, res, next) => {
-    let sql = "select * from queue where first_name = ?";
-    let params = [req.params.first_name];
+// endpoint for getting by row_id
+app.get("/api/queue/:rowid", (req, res, next) => {
+    let sql = "select * from queue where rowid = ?";
+    let params = [req.params.rowid];
     db.get(sql, params, (err, row) => {
         if (err) {
           res.status(400).json({"error":err.message});
@@ -69,16 +69,18 @@ app.post("/api/queue/", (req, res, next) => {
         errors.push("No time specified");
     }
     if (errors.length){
+        console.log(req);
         res.status(400).json({"error":errors.join(",")});
         return;
     }
     let data = {
         first_name: req.query.first_name,
         last_name: req.query.last_name,
-        time: req.query.time
+        time: req.query.time,
+        active: 1
     }
-    let sql ='INSERT INTO queue(first_name, last_name, time) VALUES (?,?, ?)'
-    let params =[data.first_name, data.last_name, data.time];
+    let sql ='INSERT INTO queue(first_name, last_name, time, active) VALUES (?,?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.time, data.active];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})
@@ -92,20 +94,13 @@ app.post("/api/queue/", (req, res, next) => {
     });
 })
 
-// endpoint to update a person 
-app.patch("/api/queue/:first_name", (req, res, next) => {
-    var data = {
-        first_name: req.query.first_name,
-        last_name: req.query.last_name,
-        time: req.query.time
-    }
+// endpoint to update a person with 0 active status
+app.patch("/api/queue/:rowid", (req, res, next) => {
     db.run(
         `UPDATE queue set 
-           first_name = COALESCE(?,first_name), 
-           last_name = COALESCE(?,last_name), 
-           time = COALESCE(?,time) 
-           WHERE first_name = ?`,
-        [data.first_name, data.last_name, data.time, req.params.first_name],
+           active = 0 
+           WHERE rowid = ?`,
+        [req.params.rowid],
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})
@@ -113,17 +108,16 @@ app.patch("/api/queue/:first_name", (req, res, next) => {
             }
             res.json({
                 message: "success",
-                data: data,
                 changes: this.changes
             })
     });
 })
 
 // endpoint to delete a person 
-app.delete("/api/queue/:first_name", (req, res, next) => {
+app.delete("/api/queue/:rowid", (req, res, next) => {
     db.run(
-        'DELETE FROM queue WHERE first_name = ?',
-        req.params.first_name,
+        'DELETE FROM queue WHERE rowid = ?',
+        req.params.rowid,
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})
