@@ -52,14 +52,14 @@ button:hover {
 }
 
 #form {
-  width: 40%;
+  width: 80%;
   border-radius: 5px;
   background-color: #f2f2f2;
   padding: 5%;
 }
 
 #queueEntriesBox{
-  width: 40%;
+  width: 80%;
   border-radius: 5px;
   background-color: #FFE552;
   padding: 5%;
@@ -72,4 +72,18 @@ button:hover {
   padding: 10px;
   border-radius: 5px;
   color: black;
+}
+
+#left{
+  width: 35%;
+  float: left;
+}
+
+#center{
+  width: 35%;
+  float: left;
+}
+
+#right{
+  float: left;
 }

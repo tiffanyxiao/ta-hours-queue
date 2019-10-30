@@ -1,3 +1,6 @@
+//let url = "https://mysterious-headland-07008.herokuapp.com/";
+let url = "http://localhost:8000/";
+
 // create a entry box object
 class Entry{
     constructor(firstName, lastName, time, id, status){
@@ -16,16 +19,13 @@ class Entry{
     }
 }
 
-//let url = "https://mysterious-headland-07008.herokuapp.com/";
-let url = "http://localhost:8000/";
-
-function loadAll(response){
+function loadAll(response, session_id){
     clearQueue();
     response = JSON.parse(response);
     for (entry in response["data"]){
         currentEntry = response["data"][entry];
         // only show if active is 1 
-        if (currentEntry["active"]===1){
+        if (currentEntry["active"]===1 & currentEntry["session_id"]===session_id){
             let firstNameE = currentEntry["first_name"];
             let lastNameE = currentEntry["last_name"];
             // create a time 
@@ -54,11 +54,11 @@ function clearQueue(){
     document.getElementById("queueEntries").innerHTML = "";
 }
 
-function httpGetAsync(theUrl){
+function httpGetAsync(theUrl, session_id){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            loadAll(xmlHttp.responseText);
+            loadAll(xmlHttp.responseText, session_id);
     }
     xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
     xmlHttp.send(null);
@@ -75,7 +75,7 @@ function httpGetPatchAsync(theUrl){
     xmlHttp.send(null);
 }
 
-function httpPostAsync(theUrl, firstName, lastName, time){
+function httpPostAsync(theUrl, firstName, lastName, time, session_id){
     let response;
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -83,7 +83,7 @@ function httpPostAsync(theUrl, firstName, lastName, time){
             response = xmlHttp.responseText;
         }
     }
-    params = "first_name="+firstName+"&last_name="+lastName+"&time="+time;
+    params = "first_name="+firstName+"&last_name="+lastName+"&time="+time+"&session_id="+session_id;
     xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
     xmlHttp.send();
     return response;
@@ -93,7 +93,7 @@ function httpPatchAsync(theUrl, params){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
-            console.log(xmlHttp.responseText);
+            response = xmlHttp.responseText;
         }
     }
     xmlHttp.open("PATCH", theUrl+"api/queue/"+params, true); // true for asynchronous 
@@ -113,11 +113,9 @@ function httpDeleteAsync(theUrl, params){
 }
 
 function confirmAction(url,newEntryId){
-    if (confirm('Are you sure you want to delete this entry?')) {
-        httpDeleteAsync(url,newEntryId);
-    } else {
-        // Do nothing!
-    }
+    let publicKeyText = localStorage.getItem("publicKey");
+    let userEnteredKey = prompt('Enter private key to delete this entry.');
+    sessionDeleteCheck(url, newEntryId, publicKeyText, userEnteredKey);
 }
 
 // define a function that will turn an entry into text
@@ -166,9 +164,9 @@ function createEntry(){
 // "try it" button onclick function
 function formSubmit(){
     let sampleEntry = createEntry();
-    let date = new Date(sampleEntry.eTime).toString();
-    httpPostAsync(url,sampleEntry.eFirstName,sampleEntry.eLastName,sampleEntry.eTime);
-    httpGetAsync(url);
+    let publicKeyText = localStorage.getItem("publicKey");
+    sessionPostSessionId(url,sampleEntry.eFirstName,sampleEntry.eLastName,sampleEntry.eTime, publicKeyText);
+    sessionsGetSessionId(url, publicKeyText);
 }
 
 function archiveQueue(){
@@ -176,7 +174,127 @@ function archiveQueue(){
 }
 
 function onLoad(){
-    httpGetAsync(url);
+    // get session id 
+    let publicKeyText = localStorage.getItem("publicKey");
+    sessionsGetSessionId(url, publicKeyText);
+    let publicKeyTextArea = document.getElementById("publicKeyText");
+    publicKeyTextArea.append(publicKeyText);
+}
+
+function keySubmit(){
+    let publicKey = document.getElementById("publicKey").value;
+    localStorage.setItem("publicKey", publicKey);
+    window.location.reload();
+}
+
+// function to generate a random 6 digit number 
+function generateKeys(){
+    // generate the public and private keys
+    let privateKey = Math.floor(100000 + Math.random() * 900000);
+    let publicKey = Math.floor(100000 + Math.random() * 900000);
+    sessionsGetAllKeys(url, publicKey, privateKey);
+}
+
+/* API CALLS FOR SESSIONS API */
+
+// helper function for sessionsGetAllKeys api call 
+function checkKeys(response, publicKey, privateKey){
+    response = JSON.parse(response);
+    if ("data" in response){
+        generateKeys();    
+    } else {
+        alert("Private Key: "+privateKey+"\r \nPublic Key: "+publicKey);
+        sessionPostKeys(url,publicKey, privateKey);
+    }
+}
+
+// request to get by ALL key numbers (private and public)
+function sessionsGetAllKeys(theUrl, privateKey, publicKey){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            checkKeys(xmlHttp.responseText, publicKey, privateKey);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+// helper function for sessionsGetSessionId
+function getLoadSessionId(response){
+    response = JSON.parse(response);
+    let session_id;
+    if ("data" in response){
+        session_id = response["data"]["session_id"];
+        httpGetAsync(url, session_id);
+    } else {
+        session_id = null;
+    }
+}
+
+// request to get session id by public key
+function sessionsGetSessionId(theUrl, publicKey){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            getLoadSessionId(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+// helper function for sessionsGetSessionId
+function getPostSessionId(response, theUrl, firstName, lastName, time){
+    response = JSON.parse(response);
+    if ("data" in response){
+        session_id = response["data"]["session_id"];
+        httpPostAsync(theUrl, firstName, lastName, time, session_id);
+    }
+}
+
+// request to get + post a queue using session id 
+function sessionPostSessionId(theUrl, firstName, lastName, time, publicKey){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, time);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+// request to post keys 
+function sessionPostKeys(theUrl, publicKey, privateKey){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
+            response = xmlHttp.responseText;
+        }
+    }
+    params = "public_key="+publicKey+"&private_key="+privateKey;
+    xmlHttp.open("POST", theUrl+"api/sessions/?"+params, true); // true for asynchronous 
+    xmlHttp.send();
+}
+
+// helper for sessionDeleteCheck (deletes the item if the key matches)
+function deleteRow(theUrl, response, newEntryId){
+    response = JSON.parse(response);
+    if ("data" in response){
+        // delete the item
+        httpDeleteAsync(theUrl,newEntryId);
+    } else {
+        alert("Wrong private key.");
+    }
+}
+
+// request to check delete permissions 
+function sessionDeleteCheck(theUrl, newEntryId, publicKey, privateKey){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            deleteRow(theUrl, xmlHttp.responseText, newEntryId);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.send(null);
 }
 
 // setTimeout(function(){

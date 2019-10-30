@@ -39,6 +39,58 @@ app.get("/api/queue", (req, res, next) => {
       });
 });
 
+// endpoint for getting by public key and private key
+app.get("/api/sessions", (req, res, next) => {
+    let errors=[];
+    if (errors.length){
+        console.log(req);
+        res.status(400).json({"error":errors.join(",")});
+        return;
+    }
+    let data = {
+        public_key: req.query.public_key,
+        private_key: req.query.private_key
+    }
+    let sql ='select * from sessions where public_key=? or private_key=?';
+    let params =[data.public_key, data.private_key];
+    db.get(sql, params, function (err, rows) {
+        if (err){
+            res.status(400).json({"error": err.message})
+            return;
+        }
+        res.json({
+            "message": "success",
+            "data": rows
+        })
+    });
+});
+
+// endpoint for getting authentication by public and private key 
+app.get("/api/sessions/auth", (req, res, next) => {
+    let errors=[];
+    if (errors.length){
+        console.log(req);
+        res.status(400).json({"error":errors.join(",")});
+        return;
+    }
+    let data = {
+        public_key: req.query.public_key,
+        private_key: req.query.private_key
+    }
+    let sql ='select public_key from sessions where public_key=? and private_key=?';
+    let params =[data.public_key, data.private_key];
+    db.get(sql, params, function (err, rows) {
+        if (err){
+            res.status(400).json({"error": err.message})
+            return;
+        }
+        res.json({
+            "message": "success",
+            "data": rows
+        })
+    });
+});
+
 // endpoint for getting by row_id
 app.get("/api/queue/:rowid", (req, res, next) => {
     let sql = "select * from queue where rowid = ?";
@@ -55,10 +107,9 @@ app.get("/api/queue/:rowid", (req, res, next) => {
       });
 });
 
-// endpoint to post a person 
+// endpoint to post an entry 
 app.post("/api/queue/", (req, res, next) => {
     let errors=[];
-    // :happiny: :fried egg:
     if (!req.query.first_name){
         errors.push("No first name specified");
     }
@@ -67,6 +118,9 @@ app.post("/api/queue/", (req, res, next) => {
     }
     if (!req.query.time){
         errors.push("No time specified");
+    }
+    if (!req.query.session_id){
+        errors.push("No session_id specified");
     }
     if (errors.length){
         console.log(req);
@@ -77,10 +131,45 @@ app.post("/api/queue/", (req, res, next) => {
         first_name: req.query.first_name,
         last_name: req.query.last_name,
         time: req.query.time,
-        active: 1
+        active: 1,
+        session_id: req.query.session_id
     }
-    let sql ='INSERT INTO queue(first_name, last_name, time, active) VALUES (?,?, ?, ?)'
-    let params =[data.first_name, data.last_name, data.time, data.active];
+    let sql ='INSERT INTO queue(first_name, last_name, time, active, session_id) VALUES (?,?, ?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.time, data.active, data.session_id];
+    db.run(sql, params, function (err, result) {
+        if (err){
+            res.status(400).json({"error": err.message})
+            return;
+        }
+        res.json({
+            "message": "success",
+            "data": data,
+            "id" : this.lastID
+        })
+    });
+})
+
+// endpoint to post a session 
+app.post("/api/sessions/", (req, res, next) => {
+    let errors=[];
+    // :happiny: :fried egg:
+    if (!req.query.public_key){
+        errors.push("No public key specified");
+    }
+    if (!req.query.private_key){
+        errors.push("No private key specified");
+    }
+    if (errors.length){
+        console.log(req);
+        res.status(400).json({"error":errors.join(",")});
+        return;
+    }
+    let data = {
+        public_key: req.query.public_key,
+        private_key: req.query.private_key
+    }
+    let sql ='INSERT INTO sessions(public_key, private_key) VALUES (?, ?)'
+    let params =[data.public_key, data.private_key];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})

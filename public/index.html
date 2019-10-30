@@ -8,12 +8,12 @@
   <body onload="onLoad()">
     <!--- Navbar --->
     <div>
-      <div>
-        <h1 style = "float: left"> TA Hours Queue </h1>
+      <div style = "float: left">
+        <h1> TA Hours Queue </h1>
       </div>
       <div>
         <ul>
-          <li><a href="#home"> Home </a></li>
+          <li><a href="home.html"> Home </a></li>
           <li><a href="#session"> Session </a></li>
           <li><a href="#help"> Help </a></li>
           <li><a href="#Contact"> Contact </a></li>
@@ -22,33 +22,53 @@
     </div> 
     <!--- Body --->
     <br>
+    <br> 
     <br>
     <br>
     <br>
-    <div>
-      <center><h1> Session #1: Ford 242</h1>
+    <center>
+    <div id="top">
+      <h1> Session #1: Ford 242</h1>
       <!--- Form --->
-      <div id="form">
-        First name:<br>
-        <input type="text" id="firstName" name="firstname" value="Mickey">
-        <br>
-        Last name:<br>
-        <input type="text" id="lastName" name="lastname" value="Mouse">
-        <br><br>
-        <!-- <button onclick="httpGetAsync('http://localhost:8000/api/queue')">Try it</button> -->
-        <button onclick="formSubmit()">Try it</button>
-        <button onclick="archiveQueue()">Clear Queue</button>
+      <div style="width: 50%;">
+        Public Key:
+        <input type="text" id="publicKey" name="publicKey" value="110319">
+        <button onclick="keySubmit()">Enter</button>
       </div>
-      <br>
-      <!--- Queue Entries --->
-      <div id="queueEntriesBox">
-        <h1> Queue: </h1>
-        <div id="queueEntries">
-
+    </div>
+    <br>
+    <br>
+    <div id="left">
+      <div>
+        <!--- Form --->
+        <div id="form">
+          First name:<br>
+          <input type="text" id="firstName" name="firstname" value="Mickey">
+          <br>
+          Last name:<br>
+          <input type="text" id="lastName" name="lastname" value="Mouse">
+          <br><br>
+          <!-- <button onclick="httpGetAsync('http://localhost:8000/api/queue')">Try it</button> -->
+          <button onclick="formSubmit()">Submit</button>
+          <button onclick="archiveQueue()">Clear Queue</button>
         </div>
       </div>
-      </center>
     </div>
+    <div id="center">
+      <div>
+        <!--- Queue Entries --->
+        <div id="queueEntriesBox">
+          <h1> Queue: </h1>
+          <div id="queueEntries">
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="right">
+      Current Public Key: <p id="publicKeyText"></p>
+    </div>
+    </center>
     <script src="script.js"></script>
   </body>
 </html>
