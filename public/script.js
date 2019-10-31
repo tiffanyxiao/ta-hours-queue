@@ -1,126 +1,77 @@
+/* 
+* Author: Tiffany Xiao
+* Description: Javascript code for ta-hours-queue
+* Date last modified: See Github repo (https://github.com/tiffanyxiao/ta-hours-queue)
+*/
+
 //let url = "https://mysterious-headland-07008.herokuapp.com/";
 let url = "http://localhost:8000/";
 
-// create a entry box object
+/* 
+* Each instance of the Entry class represents an entry in the queue for a single session. 
+* The constructor includes fields representing each column.
+*/
 class Entry{
-    constructor(firstName, lastName, time, id, status){
+    /* 
+    * Constructor for an entry.
+    *
+    * @param    {string}    firstName   The first name of the student (of this entry).
+    * @param    {string}    lastName    The last name of the student (of this entry).
+    * @param    {time}      int         The time this entry was created.
+    * @param    {id}        int         id for this entry. Correlates to the rowid of database.
+    * @param    {active}    int         Either 0 or 1. 0 for non-active entry, 1 for active entry.
+    */
+    constructor(firstName, lastName, time, id, active){
         this.eFirstName = firstName;
         this.eLastName = lastName;
         this.eDescription = "";
-        // get the time (in milliseconds) of today
         this.eTime = time;
         this.id = id;
-        this.status = status;
+        this.active = active;
         this.eFullName = this.eFirstName+" "+this.eLastName;
     }
     
+    /* 
+    * Function to set the id of this entry
+    *
+    * @param {int}  id  The new id to set this entry's id to.
+    */
     setId(id){
         this.id = id;
     }
 }
 
-function loadAll(response, session_id){
-    clearQueue();
-    response = JSON.parse(response);
-    for (entry in response["data"]){
-        currentEntry = response["data"][entry];
-        // only show if active is 1 
-        if (currentEntry["active"]===1 & currentEntry["session_id"]===session_id){
-            let firstNameE = currentEntry["first_name"];
-            let lastNameE = currentEntry["last_name"];
-            // create a time 
-            let tempTime = new Date(currentEntry["time"]);
-            let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
-            let id = currentEntry["person_id"];
-            let status = currentEntry["active"];
-            // create an entry object instance
-            let newEntry = new Entry(firstNameE, lastNameE, time, id, status);
-            entryToText(newEntry, time);
-        }
-    }
-}
+/* REGULAR JAVASCRIPT FUNCTION CALLS */ 
 
-function getPatch(response){
-    clearQueue();
-    response = JSON.parse(response);
-    for (entry in response["data"]){
-        currentEntry = response["data"][entry];
-        // only show if active is 1 
-        httpPatchAsync(url,currentEntry["person_id"]);
-    }
-}
-
+/*
+* Function to clear all HTML code from queue.
+*/
 function clearQueue(){
     document.getElementById("queueEntries").innerHTML = "";
 }
 
-function httpGetAsync(theUrl, session_id){
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            loadAll(xmlHttp.responseText, session_id);
-    }
-    xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
-    xmlHttp.send(null);
-}
-
-function httpGetPatchAsync(theUrl){
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getPatch(xmlHttp.responseText);
-            window.location.reload();
-    }
-    xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
-    xmlHttp.send(null);
-}
-
-function httpPostAsync(theUrl, firstName, lastName, time, session_id){
-    let response;
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
-            response = xmlHttp.responseText;
-        }
-    }
-    params = "first_name="+firstName+"&last_name="+lastName+"&time="+time+"&session_id="+session_id;
-    xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
-    xmlHttp.send();
-    return response;
-}
-
-function httpPatchAsync(theUrl, params){
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
-            response = xmlHttp.responseText;
-        }
-    }
-    xmlHttp.open("PATCH", theUrl+"api/queue/"+params, true); // true for asynchronous 
-    xmlHttp.send();
-}
-
-function httpDeleteAsync(theUrl, params){
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            response = xmlHttp.responseText;
-            window.location.reload();
-    }
-    xmlHttp.open("DELETE", theUrl+"api/queue/"+params, true); // true for asynchronous 
-    xmlHttp.send(null);
-    console.log("done");
-}
-
+/*
+* Function to ask user to confirm delete action. Then, calls delete API call to delete
+* entry from queue table.
+* 
+* @param    {string}    url     url of the hosted server
+* @param    {string}    id      id of entry to delete 
+* 
+*/ 
 function confirmAction(url,newEntryId){
     let publicKeyText = localStorage.getItem("publicKey");
     let userEnteredKey = prompt('Enter private key to delete this entry.');
-    sessionDeleteCheck(url, newEntryId, publicKeyText, userEnteredKey);
+    requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, userEnteredKey);
 }
 
-// define a function that will turn an entry into text
+/*
+* Turn the entry instance into html to display.
+*
+* @param    {string}    newEntry    entry to turn into html
+* @param    {string}    date        date & time the entry was made by user
+*/
 function entryToText(newEntry, date){
-    // create text element
+    // create text elements
     let para = document.createElement("p");
     let nameText = document.createTextNode(newEntry.eFullName);
     let dateText = document.createTextNode(" "+date+" ");
@@ -136,20 +87,23 @@ function entryToText(newEntry, date){
     img.setAttribute("width", "10");
     img.setAttribute("alt", "x-out-button");
 
-    // set onclick function
+    // set onclick function for deleting the entry (call confirmAction)
     img.onclick = function(){
         confirmAction(url,newEntry.id);
     }
 
-    // append to para
+    // append elements to paragraph element (to add to queue box) 
     para.appendChild(nameText);
     para.appendChild(xText);
     para.appendChild(dateText);
     para.appendChild(img);
     queue.appendChild(para);
 }
-
-// create a new entry based off of form 
+ 
+/* 
+* Create a new entry based off of the entries in the form 
+*
+*/
 function createEntry(){
     // get the info from html element by ID
     let firstNameE = document.getElementById("firstName").value;
@@ -161,98 +115,295 @@ function createEntry(){
     return newEntry;
 }
 
-// "try it" button onclick function
+/*
+* Submit button on form's onclick function. Creates an entry and adds it to the table and queue.
+*
+*/ 
 function formSubmit(){
     let sampleEntry = createEntry();
     let publicKeyText = localStorage.getItem("publicKey");
-    sessionPostSessionId(url,sampleEntry.eFirstName,sampleEntry.eLastName,sampleEntry.eTime, publicKeyText);
-    sessionsGetSessionId(url, publicKeyText);
+    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName,sampleEntry.eTime, publicKeyText);
+    requestSessionsGetPublicKey(url, publicKeyText);
 }
 
+/* 
+* Clear queue button's onclick function. Calls API call to change all active status and update page.
+*
+*/
 function archiveQueue(){
-    httpGetPatchAsync(url);
+    requestQueueGetId(url);
 }
 
+/*
+* Onload function for the page. Loads queue and the public key (from local storage).
+*
+*/
 function onLoad(){
     // get session id 
     let publicKeyText = localStorage.getItem("publicKey");
-    sessionsGetSessionId(url, publicKeyText);
+    requestSessionsGetPublicKey(url, publicKeyText);
     let publicKeyTextArea = document.getElementById("publicKeyText");
     publicKeyTextArea.append(publicKeyText);
 }
 
+/* 
+* Button to submit public key to local storage's onclick function.
+*
+*/
 function keySubmit(){
     let publicKey = document.getElementById("publicKey").value;
     localStorage.setItem("publicKey", publicKey);
     window.location.reload();
 }
 
-// function to generate a random 6 digit number 
+/* 
+* Function to generate a random 6 digit number for the keys. Then, posts the keys to the 
+* sessions table.
+*
+*/
 function generateKeys(){
     // generate the public and private keys
     let privateKey = Math.floor(100000 + Math.random() * 900000);
     let publicKey = Math.floor(100000 + Math.random() * 900000);
-    sessionsGetAllKeys(url, publicKey, privateKey);
+    requestSessionsGetKey(url, publicKey, privateKey);
 }
 
-/* API CALLS FOR SESSIONS API */
+/* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
 
-// helper function for sessionsGetAllKeys api call 
-function checkKeys(response, publicKey, privateKey){
+/*
+* Callback function to load all entries in queue. 
+*
+* @param    {JSON string}   response    response string from API call
+* @param    {session_id}    int         id of the session (from session table id column)
+*/
+function callbackRequestQueueGetEntries(response, session_id){
+    // clear queue 
+    clearQueue();
+    // parse json response, then iterate through the response (to get each entry and display)
+    response = JSON.parse(response);
+    for (entry in response["data"]){
+        currentEntry = response["data"][entry];
+        // only show if active is 1 and the session_id matches
+        if (currentEntry["active"]===1 & currentEntry["session_id"]===session_id){
+            let firstNameE = currentEntry["first_name"];
+            let lastNameE = currentEntry["last_name"];
+            // create a time for when this entry was made
+            let tempTime = new Date(currentEntry["time"]);
+            let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
+            let id = currentEntry["person_id"];
+            let active = currentEntry["active"];
+            // create an entry object instance
+            let newEntry = new Entry(firstNameE, lastNameE, time, id, active);
+            // display on html page
+            entryToText(newEntry, time);
+        }
+    }
+}
+
+/*
+* Request to get the entire queue table. 
+*
+* @param    {string}    theUrl url      of the host server
+* @param    {int}       session_id      id of the session 
+*/
+function requestQueueGetEntries(theUrl, session_id){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        callbackRequestQueueGetEntries(xmlHttp.responseText, session_id);
+    }
+    xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+/*
+* Callback function to update all entries' ids in the queue. Uses patch call.
+*
+* @param    {JSON string}    response    response from API call
+*/
+function callbackRequestQueueGetId(response){
+    clearQueue();
+    response = JSON.parse(response);
+    for (entry in response["data"]){
+        currentEntry = response["data"][entry];
+        requestQueuePatchId(url,currentEntry["person_id"]);
+    }
+}
+
+/*
+* Request to api queue get call to get entire table (to be used)
+*
+* @param    {string}    theUrl      url for the host server
+*/
+function requestQueueGetId(theUrl){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callbackRequestQueueGetId(xmlHttp.responseText);
+            window.location.reload();
+    }
+    xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+/* 
+* Request to update all entries entered to active=0. 
+*
+* @param    {string}    theUrl      url for the host server
+* @params   {int}       params      id of the entry
+*/
+function requestQueuePatchId(theUrl, params){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
+            response = xmlHttp.responseText;
+        }
+    }
+    xmlHttp.open("PATCH", theUrl+"api/queue/"+params, true); // true for asynchronous 
+    xmlHttp.send();
+}
+
+/*
+* Request to post to queue table (post an entry). 
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {string}    firstName   first name for the entry
+* @param    {string}    lastName    last name for the entry
+* @param    {int}       time        time for the entry (numeric numbers only)
+* @param    {int}       session_id  id for the session    
+*/
+function requestQueuePostEntry(theUrl, firstName, lastName, time, session_id){
+    let response;
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
+            response = xmlHttp.responseText;
+        }
+    }
+    params = "first_name="+firstName+"&last_name="+lastName+"&time="+time+"&session_id="+session_id;
+    xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
+    xmlHttp.send();
+    return response;
+}
+
+/*
+* Request to delete the entry. 
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       params      id of the entry to be deleted
+*/
+function requestQueueDeleteEntry(theUrl, params){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            response = xmlHttp.responseText;
+            window.location.reload();
+    }
+    xmlHttp.open("DELETE", theUrl+"api/queue/"+params, true); // true for asynchronous 
+    xmlHttp.send(null);
+    console.log("done");
+}
+
+/* ------------------------- API CALLS FOR SESSIONS TABLE ------------------------- */
+
+// helper function for requestSessionsGetKey api call 
+/*
+* Callback to alert private key and public key and post them to session table if they don't already
+* exist. If they do, generate new keys.
+*
+* @param    {JSON string}   response    response from api
+* @param    {int}           publicKey   public key 
+* @param    {int}           privateKey  private key 
+*/
+function callbackRequestSessionsGetKey(response, publicKey, privateKey){
     response = JSON.parse(response);
     if ("data" in response){
         generateKeys();    
     } else {
-        alert("Private Key: "+privateKey+"\r \nPublic Key: "+publicKey);
-        sessionPostKeys(url,publicKey, privateKey);
+        alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
+        requestSessionsPostKeys(url,publicKey, privateKey);
     }
 }
 
-// request to get by ALL key numbers (private and public)
-function sessionsGetAllKeys(theUrl, privateKey, publicKey){
+/*
+* Request to get session by any key numbers (private and/or public)
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       privateKey  the private key 
+* @param    {int}       publicKey   the public key
+*/
+function requestSessionsGetKey(theUrl, privateKey, publicKey){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            checkKeys(xmlHttp.responseText, publicKey, privateKey);
+        callbackRequestSessionsGetKey(xmlHttp.responseText, publicKey, privateKey);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
-// helper function for sessionsGetSessionId
-function getLoadSessionId(response){
+/*
+* Callback for requestSessionsGetPublicKey. Extracts the session id and then gets entries 
+* based off of the session_id.
+*
+* @param    {JSON string}   response    response from the api
+*/
+function callbackRequestSessionsGetPublicKey(response){
     response = JSON.parse(response);
     let session_id;
     if ("data" in response){
         session_id = response["data"]["session_id"];
-        httpGetAsync(url, session_id);
+        requestQueueGetEntries(url, session_id);
     } else {
         session_id = null;
     }
 }
 
-// request to get session id by public key
-function sessionsGetSessionId(theUrl, publicKey){
+/*
+* Request to get session id using only the public key, to be used for getting all entries with the id.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       publicKey   the public key
+*/
+function requestSessionsGetPublicKey(theUrl, publicKey){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getLoadSessionId(xmlHttp.responseText);
+        callbackRequestSessionsGetPublicKey(xmlHttp.responseText);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
-// helper function for sessionsGetSessionId
+/*
+* Callback for requestSessionsGetToPostEntry. Post all entires with the specific 
+* session id from the response.
+*
+* @param    {JSON string}   response    response from api
+* @param    {string}        theUrl      url for the host server
+* @param    {string}        firstName   first name for the entry
+* @param    {string}        lastName    last name for the entry
+* @param    {int}           time        time for the entry (numeric numbers only)
+*/
 function getPostSessionId(response, theUrl, firstName, lastName, time){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"]["session_id"];
-        httpPostAsync(theUrl, firstName, lastName, time, session_id);
+        requestQueuePostEntry(theUrl, firstName, lastName, time, session_id);
     }
 }
 
-// request to get + post a queue using session id 
-function sessionPostSessionId(theUrl, firstName, lastName, time, publicKey){
+
+/*
+* Request to get a session id based on public key, to be used for posting an entry with the session_id.
+*
+* @param    {JSON string}   response    response from api
+* @param    {string}        theUrl      url for the host server
+* @param    {string}        firstName   first name for the entry
+* @param    {string}        lastName    last name for the entry
+* @param    {int}           time        time for the entry (numeric numbers only)
+*/
+function requestSessionsGetToPostEntry(theUrl, firstName, lastName, time, publicKey){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
@@ -262,8 +413,14 @@ function sessionPostSessionId(theUrl, firstName, lastName, time, publicKey){
     xmlHttp.send(null);
 }
 
-// request to post keys 
-function sessionPostKeys(theUrl, publicKey, privateKey){
+/*
+* Request to post keys to the session table. 
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       privateKey  the private key 
+* @param    {int}       publicKey   the public key
+*/
+function requestSessionsPostKeys(theUrl, publicKey, privateKey){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
@@ -275,23 +432,37 @@ function sessionPostKeys(theUrl, publicKey, privateKey){
     xmlHttp.send();
 }
 
-// helper for sessionDeleteCheck (deletes the item if the key matches)
-function deleteRow(theUrl, response, newEntryId){
+/*
+* Callback function for requestSessionsGetKeyAuth. Deletes the item if the response
+* indicates that there is a match for the public and private key.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {JSON string}   response    response from api
+* @param    {int}       newEntryId  id of the entry to be deleted
+*/
+function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId){
     response = JSON.parse(response);
     if ("data" in response){
         // delete the item
-        httpDeleteAsync(theUrl,newEntryId);
+        requestQueueDeleteEntry(theUrl,newEntryId);
     } else {
         alert("Wrong private key.");
     }
 }
 
-// request to check delete permissions 
-function sessionDeleteCheck(theUrl, newEntryId, publicKey, privateKey){
+/*
+* Request to check if keys match in the sessions table, to delete the entry.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       newEntryId  id of the entry to be deleted
+* @param    {int}       privateKey  the private key 
+* @param    {int}       publicKey   the public key
+*/
+function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            deleteRow(theUrl, xmlHttp.responseText, newEntryId);
+        callbackRequestSessionsGetKeyAuth(theUrl, xmlHttp.responseText, newEntryId);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
     xmlHttp.send(null);

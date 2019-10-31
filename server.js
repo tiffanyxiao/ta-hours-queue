@@ -1,3 +1,9 @@
+/* 
+* Author: Tiffany Xiao
+* Description: Code for a RESTful API for the ta-hours-queue project. 
+* Date last modified: See Github repo (https://github.com/tiffanyxiao/ta-hours-queue)
+*/
+
 // Create express app
 let express = require("express");
 let app = express();
@@ -23,7 +29,7 @@ app.get("/", (req, res, next) => {
     res.json({"message":"Ok"});
 });
 
-// endpoint for whole queue
+// endpoint for getting the whole queue from queue table
 app.get("/api/queue", (req, res, next) => {
     let sql = "select * from queue order by time asc";
     let params = [];
@@ -39,7 +45,7 @@ app.get("/api/queue", (req, res, next) => {
       });
 });
 
-// endpoint for getting by public key and private key
+// endpoint for getting a row by public key and private key from sessions table
 app.get("/api/sessions", (req, res, next) => {
     let errors=[];
     if (errors.length){
@@ -65,7 +71,7 @@ app.get("/api/sessions", (req, res, next) => {
     });
 });
 
-// endpoint for getting authentication by public and private key 
+// endpoint for checking public key and private key match from sessions table
 app.get("/api/sessions/auth", (req, res, next) => {
     let errors=[];
     if (errors.length){
@@ -91,7 +97,7 @@ app.get("/api/sessions/auth", (req, res, next) => {
     });
 });
 
-// endpoint for getting by row_id
+// endpoint for getting by row_id from queue table
 app.get("/api/queue/:rowid", (req, res, next) => {
     let sql = "select * from queue where rowid = ?";
     let params = [req.params.rowid];
@@ -107,7 +113,7 @@ app.get("/api/queue/:rowid", (req, res, next) => {
       });
 });
 
-// endpoint to post an entry 
+// endpoint to post an entry into queue table
 app.post("/api/queue/", (req, res, next) => {
     let errors=[];
     if (!req.query.first_name){
@@ -149,7 +155,7 @@ app.post("/api/queue/", (req, res, next) => {
     });
 })
 
-// endpoint to post a session 
+// endpoint to post a session (public key and private key) into the sessions table
 app.post("/api/sessions/", (req, res, next) => {
     let errors=[];
     // :happiny: :fried egg:
@@ -183,7 +189,7 @@ app.post("/api/sessions/", (req, res, next) => {
     });
 })
 
-// endpoint to update a person with 0 active status
+// endpoint to update an entry with 0 active status in queue table
 app.patch("/api/queue/:rowid", (req, res, next) => {
     db.run(
         `UPDATE queue set 
@@ -202,7 +208,7 @@ app.patch("/api/queue/:rowid", (req, res, next) => {
     });
 })
 
-// endpoint to delete a person 
+// endpoint to delete a person in queue table
 app.delete("/api/queue/:rowid", (req, res, next) => {
     db.run(
         'DELETE FROM queue WHERE rowid = ?',

@@ -1,3 +1,9 @@
+/* 
+* Author: Tiffany Xiao
+* Description: Code to connect to database, or create the database if it doesn't already exist. 
+* Date last modified: See Github repo (https://github.com/tiffanyxiao/ta-hours-queue)
+*/
+
 // import sqlite3 module 
 const sqlite3 = require('sqlite3').verbose();
 
@@ -16,8 +22,7 @@ let db = new sqlite3.Database('ta_hours_queue.db', sqlite3.OPEN_READWRITE, (err)
             }else{  
                 // add some rows
                 // let insert = 'INSERT INTO queue(first_name, last_name, time) VALUES (?,?,?)';
-                // db.run(insert, ["Tiffany","Xiao","2:04"]);
-                // db.run(insert, ["Mickey","Mouse","3:55"]);              
+                // db.run(insert, ["Tiffany","Xiao","11:03"]);
             }
         });  
         db.run('CREATE TABLE sessions(session_id INTEGER PRIMARY KEY, public_key varchar(255), private_key varchar(255))', 
@@ -27,8 +32,7 @@ let db = new sqlite3.Database('ta_hours_queue.db', sqlite3.OPEN_READWRITE, (err)
             }else{  
                 // add some rows
                 // let insert = 'INSERT INTO queue(first_name, last_name, time) VALUES (?,?,?)';
-                // db.run(insert, ["Tiffany","Xiao","2:04"]);
-                // db.run(insert, ["Mickey","Mouse","3:55"]);              
+                // db.run(insert, ["Tiffany","Xiao","11:03"]);
             }
         });  
     }
