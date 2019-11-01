@@ -69,6 +69,30 @@ app.get("/api/sessions/all", (req, res, next) => {
       });      
 });
 
+// endpoint for getting all active rows from sessions table
+app.get("/api/sessions/active/", (req, res, next) => {
+    // STEP 1: get all the indexes that are active: 
+    let sql = "select * from sessions where active=1";
+    let params = [];
+    let response = [];
+    db.all(sql, params, (err, rows) => {
+        if (err) {
+          res.status(400).json({"error":err.message});
+          return;
+        }
+        // do not return the private key
+        if (rows){
+            for (let i = 0; i < rows.length; i++ ) {
+                rows[i]["private_key"] = "";
+            }
+        }
+        res.json({
+            "message":"success",
+            "data":rows
+        })
+      }); 
+});
+
 // endpoint for getting a row by session_id from sessions table
 app.get("/api/sessions/generatekeys/", (req, res, next) => {
     // STEP 1: get all the indexes that are active: 
@@ -243,6 +267,45 @@ app.patch("/api/queue/:rowid", (req, res, next) => {
            active = 0 
            WHERE rowid = ?`,
         [req.params.rowid],
+        function (err, result) {
+            if (err){
+                res.status(400).json({"error": res.message})
+                return;
+            }
+            res.json({
+                message: "success",
+                changes: this.changes
+            })
+    });
+})
+
+// endpoint to update an entry with 1 active status and a session name in sessions table
+app.patch("/api/sessions/update", (req, res, next) => {
+    var errors=[]
+    if (!req.query.rowid){
+        errors.push("No rowid specified");
+    }
+    if (!req.query.session_name){
+        errors.push("No session name specified");
+    }
+    if (!req.query.active){
+        errors.push("No active value specified");
+    }
+    if (errors.length){
+        res.status(400).json({"error":errors.join(",")});
+        return;
+    }
+    let data = {
+        rowid: req.query.rowid,
+        session_name: req.query.session_name,
+        active: req.query.active
+    }
+    db.run(
+        `UPDATE sessions set 
+           active = ?,
+           session_name =?
+           WHERE rowid = ?`,
+        [data.active, data.session_name, data.rowid],
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})

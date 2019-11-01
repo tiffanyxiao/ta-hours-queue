@@ -44,7 +44,30 @@ class Entry{
     }
 }
 
-/* REGULAR JAVASCRIPT FUNCTION CALLS */ 
+/* 
+* Each instance of the Session class represents an entry in the session queue.
+* The constructor includes fields representing some columns of the sessions table (no private key).
+*/
+class Session{
+    /* 
+    * Constructor for an entry.
+    *
+    * @param    {int}       sessionId      id of the session.
+    * @param    {string}    publicKey      Public key for the session.
+    * @param    {int}       active          Either 0 or 1. 0 for non-active session, 1 for active session.
+    * @param    {string}    sessionName    Name of the session.
+    */
+    constructor(sessionId, publicKey, active, sessionName, room, TAs){
+        this.sSessionId = sessionId;
+        this.sPublicKey = publicKey;
+        this.sActive = active;
+        this.sSessionName = sessionName;
+        this.sRoom = room;
+        this.sTAs = TAs;
+    }
+}
+
+/* ------------------------- REGULAR JAVASCRIPT FUNCTION CALLS ------------------------- */ 
 
 /*
 * Function to clear all HTML code from queue.
@@ -102,6 +125,44 @@ function entryToText(newEntry, date){
     para.appendChild(img);
     queue.appendChild(para);
 }
+
+/*
+* Turn the session instance into html to display.
+*
+* @param    {string}    newSession    session to turn into html
+*/
+function sessionToText(newSession){
+    // create text elements
+    let para = document.createElement("p");
+    let nameText = document.createTextNode(newSession.sSessionName);
+    let lineBreak = document.createElement("br");
+    let roomText = document.createTextNode(newSession.sRoom);
+    let taText = document.createTextNode(newSession.sTAs);
+    let queue = document.getElementById('sessionEntries');
+    let xText = document.createTextNode("  ");
+    let img = document.createElement("img");
+
+    // set attributes if needed
+    para.setAttribute("class","queueEntry");
+    img.setAttribute("src", "images/x-icon.png");
+    img.setAttribute("height", "10");
+    img.setAttribute("width", "10");
+    img.setAttribute("alt", "x-out-button");
+
+    // set onclick function for deleting the entry (call confirmAction)
+    img.onclick = function(){
+        confirmAction(url,newSession.id);
+    }
+
+    // append elements to paragraph element (to add to queue box) 
+    para.appendChild(nameText);
+    para.appendChild(lineBreak);
+    para.appendChild(roomText);
+    para.appendChild(lineBreak);
+    para.appendChild(taText);
+    para.appendChild(img);
+    queue.appendChild(para);
+}
  
 /* 
 * Create a new entry based off of the entries in the form 
@@ -136,7 +197,7 @@ function archiveQueue(){
 }
 
 /*
-* Onload function for the page. Loads queue and the public key (from local storage).
+* Onload function for the queue page. Loads queue and the public key (from local storage).
 *
 */
 function onLoad(){
@@ -145,6 +206,16 @@ function onLoad(){
     requestSessionsGetPublicKey(url, publicKeyText);
     let publicKeyTextArea = document.getElementById("publicKeyText");
     publicKeyTextArea.append(publicKeyText);
+}
+
+/*
+* Onload function for the session page. Loads all sessions
+*
+*/
+function onLoadSessions(){
+    let room = document.getElementById("room").value;
+    let tas = document.getElementById("taNames").value;
+    requestSessionsGetActive(url, room, tas);
 }
 
 /* 
@@ -164,7 +235,8 @@ function keySubmit(){
 */
 function generateKeys(){
     // generate the public and private keys
-    requestSessionsGetKey(url);
+    let sessionName = document.getElementById("sessionName").value;
+    requestSessionsGetKey(url, sessionName);
 }
 
 /* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
@@ -305,7 +377,6 @@ function requestQueueDeleteEntry(theUrl, params){
 
 /* ------------------------- API CALLS FOR SESSIONS TABLE ------------------------- */
 
-// helper function for requestSessionsGetKey api call 
 /*
 * Callback to alert private key and public key and post them to session table if they don't already
 * exist. If they do, generate new keys.
@@ -314,11 +385,15 @@ function requestQueueDeleteEntry(theUrl, params){
 * @param    {int}           publicKey   public key 
 * @param    {int}           privateKey  private key 
 */
-function callbackRequestSessionsGetKey(response){
+function callbackRequestSessionsGetKey(response, theUrl, sessionName){
     response = JSON.parse(response);
     publicKey = response["data"]["public_key"];
     privateKey = response["data"]["private_key"];
     alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
+    let rowId = response["data"]["session_id"];
+    let active = 1;
+    console.log("hello");
+    requestSessionsPatchSession(theUrl, active, sessionName, rowId);
 }
 
 /*
@@ -328,13 +403,56 @@ function callbackRequestSessionsGetKey(response){
 * @param    {int}       privateKey  the private key 
 * @param    {int}       publicKey   the public key
 */
-function requestSessionsGetKey(theUrl){
+function requestSessionsGetKey(theUrl, sessionName){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKey(xmlHttp.responseText);
+        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/generatekeys/", true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+/*
+* Callback to alert private key and public key and post them to session table if they don't already
+* exist. If they do, generate new keys.
+*
+* @param    {JSON string}   response    response from api
+* @param    {int}           publicKey   public key 
+* @param    {int}           privateKey  private key 
+*/
+function callbackRequestSessionsGetActive(response, room, tas){
+    // parse json response, then iterate through the response (to get each entry and display)
+    response = JSON.parse(response);
+    for (session in response["data"]){
+        currentSession = response["data"][session];
+        // only show if active is 1 and the session_id matches
+        if (currentSession["active"]===1){
+            let sessionId = currentSession["session_id"];
+            let publicKey = currentSession["public_key"];
+            // create a time for when this entry was made
+            let active = currentSession["active"];
+            let sessionName = currentSession["session_name"];
+            // create an entry object instance
+            let newSession = new Session(sessionId, publicKey, active, sessionName, room, tas);
+            // display on html page
+            sessionToText(newSession);
+        }
+    }
+}
+
+/*
+* Request to get all active sessions
+*
+* @param    {string}    theUrl      url for the host server
+*/
+function requestSessionsGetActive(theUrl, room, tas){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        callbackRequestSessionsGetActive(xmlHttp.responseText, room, tas);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/active", true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
@@ -439,6 +557,24 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey){
         callbackRequestSessionsGetKeyAuth(theUrl, xmlHttp.responseText, newEntryId);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+/*
+* Request to update session to an active session with the session name.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       active      0 for inactive, 1 for active
+* @param    {string}    sessionName name of the session
+* @param    {int}       rowId       id of the row
+*/
+function requestSessionsPatchSession(theUrl, active, sessionName, rowId){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        response = xmlHttp.responseText;
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&rowid="+rowId, true); // true for asynchronous 
     xmlHttp.send(null);
 }
 

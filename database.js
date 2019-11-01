@@ -25,7 +25,7 @@ let db = new sqlite3.Database('ta_hours_queue.db', sqlite3.OPEN_READWRITE, (err)
                 // db.run(insert, ["Tiffany","Xiao","11:03"]);
             }
         });  
-        db.run('CREATE TABLE sessions(session_id INTEGER PRIMARY KEY, public_key varchar(255), private_key varchar(255), active int)', 
+        db.run('CREATE TABLE sessions(session_id INTEGER PRIMARY KEY, public_key varchar(255), private_key varchar(255), active int, session_name varchar(255))', 
         (err) => {
             if (err) {
                 // Table already created
@@ -39,8 +39,8 @@ let db = new sqlite3.Database('ta_hours_queue.db', sqlite3.OPEN_READWRITE, (err)
                         publicKey = generateKey(6);
                         privateKey = generateKey(6);
                         if (!((publicKey in publicKeys) & (privateKey in privateKeys))){
-                            let insert = 'INSERT INTO sessions(public_key, private_key, active) VALUES (?,?,?)';
-                            db.run(insert, [publicKey, privateKey, 0]);
+                            let insert = 'INSERT INTO sessions(public_key, private_key, active, session_name) VALUES (?,?,?,?)';
+                            db.run(insert, [publicKey, privateKey, 0, ""]);
                             publicKeys.push(publicKey);
                             privateKeys.push(privateKey);
                            created = true;
