@@ -45,8 +45,56 @@ app.get("/api/queue", (req, res, next) => {
       });
 });
 
-// endpoint for getting a row by public key and private key from sessions table
-app.get("/api/sessions", (req, res, next) => {
+// endpoint for getting the whole sessions table from sessions table
+app.get("/api/sessions/all", (req, res, next) => {
+    let sql = "select * from sessions where active=1";
+    let params = [];
+    let response = [];
+    db.all(sql, params, (err, rows) => {
+        if (err) {
+          res.status(400).json({"error":err.message});
+          return;
+        }
+        if (rows){
+            // get all session_id 
+            for (let i = 0; i < rows.length; i++ ) {
+                response.push(rows[i]["session_id"])
+            }
+            // response = rows["session_id"];
+        }
+        res.json({
+            "message":"success",
+            "data":response
+        })
+      });      
+});
+
+// endpoint for getting a row by session_id from sessions table
+app.get("/api/sessions/generatekeys/", (req, res, next) => {
+    // STEP 1: get all the indexes that are active: 
+    let sql = "select * from sessions where active=1";
+    let params = [];
+    let response = [];
+    db.all(sql, params, (err, rows) => {
+        if (err) {
+          res.status(400).json({"error":err.message});
+          return;
+        }
+        if (rows){
+            // get all session_id 
+            for (let i = 0; i < rows.length; i++ ) {
+                response.push(rows[i]["session_id"])
+            }
+        }
+      });    
+    // STEP 2: generate a random row index that isn't already in response
+    let randomInt;
+    while(true){
+        randomInt = Math.floor(Math.random() * 5000)+1;
+        if (!(randomInt in response)){
+            break;
+        }
+    }
     let errors=[];
     if (errors.length){
         console.log(req);
@@ -57,12 +105,48 @@ app.get("/api/sessions", (req, res, next) => {
         public_key: req.query.public_key,
         private_key: req.query.private_key
     }
-    let sql ='select * from sessions where public_key=? or private_key=?';
+    sql ='select * from sessions where session_id =?';
+    params =[randomInt];
+    db.get(sql, params, function (err, rows) {
+        if (err){
+            res.status(400).json({"error": err.message})
+            return;
+        }
+        if (rows){
+            // get all session_id 
+            for (let i = 0; i < rows.length; i++ ) {
+                response.push(rows[i]["session_id"])
+            }
+        }
+        res.json({
+            "message": "success",
+            "data": rows
+        })
+    });
+});
+
+// endpoint for getting a row by public key from sessions table
+app.get("/api/sessions", (req, res, next) => {
+    let errors=[];
+    let response;
+    if (errors.length){
+        console.log(req);
+        res.status(400).json({"error":errors.join(",")});
+        return;
+    }
+    let data = {
+        public_key: req.query.public_key,
+        private_key: req.query.private_key
+    }
+    let sql ='select * from sessions where public_key=?';
     let params =[data.public_key, data.private_key];
     db.get(sql, params, function (err, rows) {
         if (err){
             res.status(400).json({"error": err.message})
             return;
+        }
+        if (rows){
+            response = rows["session_id"];
         }
         res.json({
             "message": "success",
@@ -142,40 +226,6 @@ app.post("/api/queue/", (req, res, next) => {
     }
     let sql ='INSERT INTO queue(first_name, last_name, time, active, session_id) VALUES (?,?, ?, ?, ?)'
     let params =[data.first_name, data.last_name, data.time, data.active, data.session_id];
-    db.run(sql, params, function (err, result) {
-        if (err){
-            res.status(400).json({"error": err.message})
-            return;
-        }
-        res.json({
-            "message": "success",
-            "data": data,
-            "id" : this.lastID
-        })
-    });
-})
-
-// endpoint to post a session (public key and private key) into the sessions table
-app.post("/api/sessions/", (req, res, next) => {
-    let errors=[];
-    // :happiny: :fried egg:
-    if (!req.query.public_key){
-        errors.push("No public key specified");
-    }
-    if (!req.query.private_key){
-        errors.push("No private key specified");
-    }
-    if (errors.length){
-        console.log(req);
-        res.status(400).json({"error":errors.join(",")});
-        return;
-    }
-    let data = {
-        public_key: req.query.public_key,
-        private_key: req.query.private_key
-    }
-    let sql ='INSERT INTO sessions(public_key, private_key) VALUES (?, ?)'
-    let params =[data.public_key, data.private_key];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})

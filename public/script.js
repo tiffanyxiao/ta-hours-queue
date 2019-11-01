@@ -2,6 +2,9 @@
 * Author: Tiffany Xiao
 * Description: Javascript code for ta-hours-queue
 * Date last modified: See Github repo (https://github.com/tiffanyxiao/ta-hours-queue)
+* 
+* naming convention for API requests: request{TableName}{Type}{Descript}
+* naming convention for callback functions: callback{RequestName}
 */
 
 //let url = "https://mysterious-headland-07008.herokuapp.com/";
@@ -163,9 +166,7 @@ function keySubmit(){
 */
 function generateKeys(){
     // generate the public and private keys
-    let privateKey = Math.floor(100000 + Math.random() * 900000);
-    let publicKey = Math.floor(100000 + Math.random() * 900000);
-    requestSessionsGetKey(url, publicKey, privateKey);
+    requestSessionsGetKey(url);
 }
 
 /* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
@@ -315,14 +316,11 @@ function requestQueueDeleteEntry(theUrl, params){
 * @param    {int}           publicKey   public key 
 * @param    {int}           privateKey  private key 
 */
-function callbackRequestSessionsGetKey(response, publicKey, privateKey){
+function callbackRequestSessionsGetKey(response){
     response = JSON.parse(response);
-    if ("data" in response){
-        generateKeys();    
-    } else {
-        alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
-        requestSessionsPostKeys(url,publicKey, privateKey);
-    }
+    publicKey = response["data"]["public_key"];
+    privateKey = response["private_key"];
+    alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
 }
 
 /*
@@ -332,13 +330,13 @@ function callbackRequestSessionsGetKey(response, publicKey, privateKey){
 * @param    {int}       privateKey  the private key 
 * @param    {int}       publicKey   the public key
 */
-function requestSessionsGetKey(theUrl, privateKey, publicKey){
+function requestSessionsGetKey(theUrl){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKey(xmlHttp.responseText, publicKey, privateKey);
+        callbackRequestSessionsGetKey(xmlHttp.responseText);
     }
-    xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.open("GET", theUrl+"api/sessions/generatekeys/", true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
@@ -393,7 +391,6 @@ function getPostSessionId(response, theUrl, firstName, lastName, time){
     }
 }
 
-
 /*
 * Request to get a session id based on public key, to be used for posting an entry with the session_id.
 *
@@ -411,25 +408,6 @@ function requestSessionsGetToPostEntry(theUrl, firstName, lastName, time, public
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);
-}
-
-/*
-* Request to post keys to the session table. 
-*
-* @param    {string}    theUrl      url for the host server
-* @param    {int}       privateKey  the private key 
-* @param    {int}       publicKey   the public key
-*/
-function requestSessionsPostKeys(theUrl, publicKey, privateKey){
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
-            response = xmlHttp.responseText;
-        }
-    }
-    params = "public_key="+publicKey+"&private_key="+privateKey;
-    xmlHttp.open("POST", theUrl+"api/sessions/?"+params, true); // true for asynchronous 
-    xmlHttp.send();
 }
 
 /*
