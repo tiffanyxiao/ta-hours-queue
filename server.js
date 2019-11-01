@@ -206,9 +206,6 @@ app.post("/api/queue/", (req, res, next) => {
     if (!req.query.last_name){
         errors.push("No last name specified");
     }
-    if (!req.query.time){
-        errors.push("No time specified");
-    }
     if (!req.query.session_id){
         errors.push("No session_id specified");
     }
@@ -224,8 +221,8 @@ app.post("/api/queue/", (req, res, next) => {
         active: 1,
         session_id: req.query.session_id
     }
-    let sql ='INSERT INTO queue(first_name, last_name, time, active, session_id) VALUES (?,?, ?, ?, ?)'
-    let params =[data.first_name, data.last_name, data.time, data.active, data.session_id];
+    let sql ='INSERT INTO queue(first_name, last_name, active, session_id) VALUES (?, ?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.active, data.session_id];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})

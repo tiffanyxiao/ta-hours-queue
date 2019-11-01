@@ -111,10 +111,8 @@ function createEntry(){
     // get the info from html element by ID
     let firstNameE = document.getElementById("firstName").value;
     let lastNameE = document.getElementById("lastName").value;
-    // create a time 
-    let time = new Date().getTime();
     // create an entry object instance
-    let newEntry = new Entry(firstNameE, lastNameE, time);
+    let newEntry = new Entry(firstNameE, lastNameE);
     return newEntry;
 }
 
@@ -125,7 +123,7 @@ function createEntry(){
 function formSubmit(){
     let sampleEntry = createEntry();
     let publicKeyText = localStorage.getItem("publicKey");
-    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName,sampleEntry.eTime, publicKeyText);
+    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText);
     requestSessionsGetPublicKey(url, publicKeyText);
 }
 
@@ -189,7 +187,7 @@ function callbackRequestQueueGetEntries(response, session_id){
             let firstNameE = currentEntry["first_name"];
             let lastNameE = currentEntry["last_name"];
             // create a time for when this entry was made
-            let tempTime = new Date(currentEntry["time"]);
+            let tempTime = new Date(currentEntry["timestamp"]);
             let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
             let id = currentEntry["person_id"];
             let active = currentEntry["active"];
@@ -273,7 +271,7 @@ function requestQueuePatchId(theUrl, params){
 * @param    {int}       time        time for the entry (numeric numbers only)
 * @param    {int}       session_id  id for the session    
 */
-function requestQueuePostEntry(theUrl, firstName, lastName, time, session_id){
+function requestQueuePostEntry(theUrl, firstName, lastName, session_id){
     let response;
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -281,7 +279,7 @@ function requestQueuePostEntry(theUrl, firstName, lastName, time, session_id){
             response = xmlHttp.responseText;
         }
     }
-    params = "first_name="+firstName+"&last_name="+lastName+"&time="+time+"&session_id="+session_id;
+    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id;
     xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
     xmlHttp.send();
     return response;
@@ -319,7 +317,7 @@ function requestQueueDeleteEntry(theUrl, params){
 function callbackRequestSessionsGetKey(response){
     response = JSON.parse(response);
     publicKey = response["data"]["public_key"];
-    privateKey = response["private_key"];
+    privateKey = response["data"]["private_key"];
     alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
 }
 
@@ -381,13 +379,12 @@ function requestSessionsGetPublicKey(theUrl, publicKey){
 * @param    {string}        theUrl      url for the host server
 * @param    {string}        firstName   first name for the entry
 * @param    {string}        lastName    last name for the entry
-* @param    {int}           time        time for the entry (numeric numbers only)
 */
-function getPostSessionId(response, theUrl, firstName, lastName, time){
+function getPostSessionId(response, theUrl, firstName, lastName){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"]["session_id"];
-        requestQueuePostEntry(theUrl, firstName, lastName, time, session_id);
+        requestQueuePostEntry(theUrl, firstName, lastName, session_id);
     }
 }
 
@@ -398,13 +395,12 @@ function getPostSessionId(response, theUrl, firstName, lastName, time){
 * @param    {string}        theUrl      url for the host server
 * @param    {string}        firstName   first name for the entry
 * @param    {string}        lastName    last name for the entry
-* @param    {int}           time        time for the entry (numeric numbers only)
 */
-function requestSessionsGetToPostEntry(theUrl, firstName, lastName, time, publicKey){
+function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, time);
+            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);
