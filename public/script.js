@@ -126,6 +126,20 @@ function entryToText(newEntry, date){
     queue.appendChild(para);
 }
 
+
+/*
+* Function to ask user to confirm delete action. Then, calls delete API call to delete
+* entry from queue table.
+* 
+* @param    {string}    url     url of the hosted server
+* @param    {string}    id      id of entry to delete 
+* 
+*/ 
+function confirmActionSessions(url, publicKey){
+    let userEnteredKey = prompt('Enter private key to delete this entry.');
+    requestSessionsGetKeyAuthSessions(url, publicKey, userEnteredKey);
+}
+
 /*
 * Turn the session instance into html to display.
 *
@@ -151,7 +165,7 @@ function sessionToText(newSession){
 
     // set onclick function for deleting the entry (call confirmAction)
     img.onclick = function(){
-        confirmAction(url,newSession.id);
+        confirmActionSessions(url, newSession.sPublicKey);
     }
 
     // append elements to paragraph element (to add to queue box) 
@@ -392,7 +406,6 @@ function callbackRequestSessionsGetKey(response, theUrl, sessionName){
     alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
     let rowId = response["data"]["session_id"];
     let active = 1;
-    console.log("hello");
     requestSessionsPatchSession(theUrl, active, sessionName, rowId);
 }
 
@@ -573,11 +586,54 @@ function requestSessionsPatchSession(theUrl, active, sessionName, rowId){
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
         response = xmlHttp.responseText;
+        window.location.reload();
     }
-    xmlHttp.open("GET", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&rowid="+rowId, true); // true for asynchronous 
+    // if there's no session name, adjust URL
+    if (sessionName == ""){
+        xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+" "+"&rowid="+rowId, true); // true for asynchronous 
+    } else {
+        xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&rowid="+rowId, true); // true for asynchronous 
+    }
     xmlHttp.send(null);
 }
 
+
+
+/*
+* Callback function for requestSessionsGetKeyAuth. Deletes the item if the response
+* indicates that there is a match for the public and private key.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {JSON string}   response    response from api
+* @param    {int}       newEntryId  id of the entry to be deleted
+*/
+function callbackRequestSessionsGetKeyAuthSessions(theUrl, response){
+    response = JSON.parse(response);
+    if ("data" in response){
+        // delete the item
+        requestSessionsPatchSession(theUrl,0,"", response["data"]["session_id"]);
+        window.location.reload();
+    } else {
+        alert("Wrong private key.");
+    }
+}
+
+/*
+* Request to check if keys match in the sessions table, to patch a session.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       privateKey  the private key 
+* @param    {int}       publicKey   the public key
+*/
+function requestSessionsGetKeyAuthSessions(theUrl, publicKey, privateKey){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        callbackRequestSessionsGetKeyAuthSessions(theUrl, xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
 // setTimeout(function(){
 //     window.location.reload(1);
 //  }, 5000);

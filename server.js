@@ -191,7 +191,7 @@ app.get("/api/sessions/auth", (req, res, next) => {
         public_key: req.query.public_key,
         private_key: req.query.private_key
     }
-    let sql ='select public_key from sessions where public_key=? and private_key=?';
+    let sql ='select public_key, session_id from sessions where public_key=? and private_key=?';
     let params =[data.public_key, data.private_key];
     db.get(sql, params, function (err, rows) {
         if (err){
