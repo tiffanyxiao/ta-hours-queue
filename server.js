@@ -31,7 +31,7 @@ app.get("/", (req, res, next) => {
 
 // endpoint for getting the whole queue from queue table
 app.get("/api/queue", (req, res, next) => {
-    let sql = "select * from queue order by time asc";
+    let sql = "select * from queue order by timestamp asc";
     let params = [];
     db.all(sql, params, (err, rows) => {
         if (err) {

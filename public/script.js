@@ -151,6 +151,7 @@ function sessionsToQueue(url, publicKey){
     let userEnteredKey = prompt('Enter public key to enter this session.');
     if (userEnteredKey == publicKey){
         document.location.href = url+"session.html";
+        localStorage.setItem("publicKey", publicKey);
     } else {
         alert("Wrong public key.");
     }
@@ -275,6 +276,23 @@ function generateKeys(){
     requestSessionsGetKey(url, sessionName, room, tas);
 }
 
+/*
+* Function to add key pairings to a dictionary (used in generating keys and entering keys funcs)
+*
+* @param    {dict}      currentDict     current dictionary (saved in localStorage)
+* @param    {string}    privateKey      private key to store
+* @param    {string}    publicKey       public key to store
+*/ 
+function addKeys(currentDict, privateKey, publicKey){
+    if (!currentDict){
+        currentDict = {};
+    } else {
+        currentDict = JSON.parse(currentDict);
+    }
+    currentDict[publicKey] = privateKey;
+    return currentDict;
+}
+
 /* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
 
 /*
@@ -288,21 +306,23 @@ function callbackRequestQueueGetEntries(response, session_id){
     clearQueue();
     // parse json response, then iterate through the response (to get each entry and display)
     response = JSON.parse(response);
-    for (entry in response["data"]){
-        currentEntry = response["data"][entry];
-        // only show if active is 1 and the session_id matches
-        if (currentEntry["active"]===1 & currentEntry["session_id"]===session_id){
-            let firstNameE = currentEntry["first_name"];
-            let lastNameE = currentEntry["last_name"];
-            // create a time for when this entry was made
-            let tempTime = new Date(currentEntry["timestamp"]);
-            let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
-            let id = currentEntry["person_id"];
-            let active = currentEntry["active"];
-            // create an entry object instance
-            let newEntry = new Entry(firstNameE, lastNameE, time, id, active);
-            // display on html page
-            entryToText(newEntry, time);
+    if (response["data"]){
+        for (entry in response["data"]){
+            currentEntry = response["data"][entry];
+            // only show if active is 1 and the session_id matches
+            if (currentEntry["active"]===1 & currentEntry["session_id"]===session_id){
+                let firstNameE = currentEntry["first_name"];
+                let lastNameE = currentEntry["last_name"];
+                // create a time for when this entry was made
+                let tempTime = new Date(currentEntry["timestamp"]);
+                let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
+                let id = currentEntry["person_id"];
+                let active = currentEntry["active"];
+                // create an entry object instance
+                let newEntry = new Entry(firstNameE, lastNameE, time, id, active);
+                // display on html page
+                entryToText(newEntry, time);
+            }
         }
     }
 }
@@ -408,7 +428,6 @@ function requestQueueDeleteEntry(theUrl, params){
     }
     xmlHttp.open("DELETE", theUrl+"api/queue/"+params, true); // true for asynchronous 
     xmlHttp.send(null);
-    console.log("done");
 }
 
 /* ------------------------- API CALLS FOR SESSIONS TABLE ------------------------- */
@@ -418,25 +437,30 @@ function requestQueueDeleteEntry(theUrl, params){
 * exist. If they do, generate new keys.
 *
 * @param    {JSON string}   response    response from api
-* @param    {int}           publicKey   public key 
-* @param    {int}           privateKey  private key 
+* @param    {string}        theUrl      url for the host server
+* @param    {string}        sessionName name for the session
+* @param    {string}        room        room for the session
+* @param    {string}        tas         tas for the session
 */
 function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas){
     response = JSON.parse(response);
     publicKey = response["data"]["public_key"];
     privateKey = response["data"]["private_key"];
     alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
+    // save the private key and public key pairing to localstorage
+    localStorage.setItem("generatedKeys", JSON.stringify(addKeys(localStorage.getItem("generatedKeys"), privateKey, publicKey)));
     let rowId = response["data"]["session_id"];
     let active = 1;
     requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId);
 }
 
 /*
-* Request to get session by any key numbers (private and/or public)
+* Request to get keys for a session
 *
 * @param    {string}    theUrl      url for the host server
-* @param    {int}       privateKey  the private key 
-* @param    {int}       publicKey   the public key
+* @param    {string}    sessionName name for the session
+* @param    {string}    room        room for the session
+* @param    {string}    tas         tas for the session
 */
 function requestSessionsGetKey(theUrl, sessionName, room, tas){
     let xmlHttp = new XMLHttpRequest();
@@ -449,22 +473,22 @@ function requestSessionsGetKey(theUrl, sessionName, room, tas){
 }
 
 /*
-* Callback to alert private key and public key and post them to session table if they don't already
-* exist. If they do, generate new keys.
+* Callback for requqest to get all the active sessions and populate the queue table
 *
 * @param    {JSON string}   response    response from api
-* @param    {int}           publicKey   public key 
-* @param    {int}           privateKey  private key 
 */
 function callbackRequestSessionsGetActive(response){
     // parse json response, then iterate through the response (to get each entry and display)
     response = JSON.parse(response);
+    // also save public keys for deleting non-active ones off the localStorage
+    activePublicKeys = []
     for (session in response["data"]){
         currentSession = response["data"][session];
         // only show if active is 1 and the session_id matches
         if (currentSession["active"]===1){
             let sessionId = currentSession["session_id"];
             let publicKey = currentSession["public_key"];
+            activePublicKeys.push(publicKey);
             // create a time for when this entry was made
             let active = currentSession["active"];
             let sessionName = currentSession["session_name"];
@@ -474,6 +498,20 @@ function callbackRequestSessionsGetActive(response){
             let newSession = new Session(sessionId, publicKey, active, sessionName, room, tas);
             // display on html page
             sessionToText(newSession);
+        }
+    }
+    // display valid active key pairings (if the key is no longer active, remove it from local storage)
+    keyPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    for (let key in keyPairingsDict){
+        if (activePublicKeys.includes(key)){
+            let para = document.getElementById('generatedKeysPara');
+            let nameText = document.createTextNode("Public Key: "+key+", Private Key: "+keyPairingsDict[key]);
+            let lineBreak = document.createElement("br");
+            para.appendChild(nameText);
+            para.appendChild(lineBreak);
+        }
+        else {
+            delete keyPairingsDict[key];
         }
     }
 }
@@ -550,6 +588,7 @@ function getPostSessionId(response, theUrl, firstName, lastName){
 * @param    {string}        theUrl      url for the host server
 * @param    {string}        firstName   first name for the entry
 * @param    {string}        lastName    last name for the entry
+* @param    {string}        publicKey   public key for the entry
 */
 function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey){
     let xmlHttp = new XMLHttpRequest();
@@ -565,9 +604,9 @@ function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey){
 * Callback function for requestSessionsGetKeyAuth. Deletes the item if the response
 * indicates that there is a match for the public and private key.
 *
-* @param    {string}    theUrl      url for the host server
+* @param    {string}        theUrl      url for the host server
 * @param    {JSON string}   response    response from api
-* @param    {int}       newEntryId  id of the entry to be deleted
+* @param    {int}           newEntryId  id of the entry to be deleted
 */
 function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId){
     response = JSON.parse(response);
@@ -603,6 +642,8 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey){
 * @param    {string}    theUrl      url for the host server
 * @param    {int}       active      0 for inactive, 1 for active
 * @param    {string}    sessionName name of the session
+* @param    {string}    room        room of the session
+* @param    {string}    tas         tas of the session
 * @param    {int}       rowId       id of the row
 */
 function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId){
@@ -622,8 +663,6 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
     if(tas == ""){
         tas = "None";
     }
-    console.log(room);
-    console.log(tas);
     xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&room="+room+"&tas="+tas+"&rowid="+rowId, true); // true for asynchronous 
     xmlHttp.send(null);
 }
@@ -634,9 +673,8 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
 * Callback function for requestSessionsGetKeyAuth. Deletes the item if the response
 * indicates that there is a match for the public and private key.
 *
-* @param    {string}    theUrl      url for the host server
+* @param    {string}        theUrl      url for the host server
 * @param    {JSON string}   response    response from api
-* @param    {int}       newEntryId  id of the entry to be deleted
 */
 function callbackRequestSessionsGetKeyAuthSessions(theUrl, response){
     response = JSON.parse(response);
