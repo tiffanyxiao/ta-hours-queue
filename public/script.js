@@ -141,6 +141,22 @@ function confirmActionSessions(url, publicKey){
 }
 
 /*
+* Function to ask user for public key in order to assess the queue page.
+* 
+* @param    {string}    url     url of the hosted server
+* @param    {string}    id      id of entry to delete 
+* 
+*/ 
+function sessionsToQueue(url, publicKey){
+    let userEnteredKey = prompt('Enter public key to enter this session.');
+    if (userEnteredKey == publicKey){
+        document.location.href = url+"session.html";
+    } else {
+        alert("Wrong public key.");
+    }
+}
+
+/*
 * Turn the session instance into html to display.
 *
 * @param    {string}    newSession    session to turn into html
@@ -150,7 +166,7 @@ function sessionToText(newSession){
     let para = document.createElement("p");
     let nameText = document.createTextNode(newSession.sSessionName);
     let lineBreak = document.createElement("br");
-    let roomText = document.createTextNode(newSession.sRoom);
+    let roomText = document.createTextNode(" "+newSession.sRoom);
     let taText = document.createTextNode(newSession.sTAs);
     let queue = document.getElementById('sessionEntries');
     let xText = document.createTextNode("  ");
@@ -164,8 +180,14 @@ function sessionToText(newSession){
     img.setAttribute("alt", "x-out-button");
 
     // set onclick function for deleting the entry (call confirmAction)
-    img.onclick = function(){
+    img.onclick = function(event){
+        event.cancelBubble = true;
         confirmActionSessions(url, newSession.sPublicKey);
+    }
+
+    // set onclick function for going to the public key page
+    para.onclick = function(){
+        sessionsToQueue(url, newSession.sPublicKey);
     }
 
     // append elements to paragraph element (to add to queue box) 
@@ -227,9 +249,7 @@ function onLoad(){
 *
 */
 function onLoadSessions(){
-    let room = document.getElementById("room").value;
-    let tas = document.getElementById("taNames").value;
-    requestSessionsGetActive(url, room, tas);
+    requestSessionsGetActive(url);
 }
 
 /* 
@@ -250,7 +270,9 @@ function keySubmit(){
 function generateKeys(){
     // generate the public and private keys
     let sessionName = document.getElementById("sessionName").value;
-    requestSessionsGetKey(url, sessionName);
+    let room = document.getElementById("room").value;
+    let tas = document.getElementById("taNames").value;
+    requestSessionsGetKey(url, sessionName, room, tas);
 }
 
 /* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
@@ -399,14 +421,14 @@ function requestQueueDeleteEntry(theUrl, params){
 * @param    {int}           publicKey   public key 
 * @param    {int}           privateKey  private key 
 */
-function callbackRequestSessionsGetKey(response, theUrl, sessionName){
+function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas){
     response = JSON.parse(response);
     publicKey = response["data"]["public_key"];
     privateKey = response["data"]["private_key"];
     alert("Private Key: "+privateKey+"  Public Key: "+publicKey);
     let rowId = response["data"]["session_id"];
     let active = 1;
-    requestSessionsPatchSession(theUrl, active, sessionName, rowId);
+    requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId);
 }
 
 /*
@@ -416,11 +438,11 @@ function callbackRequestSessionsGetKey(response, theUrl, sessionName){
 * @param    {int}       privateKey  the private key 
 * @param    {int}       publicKey   the public key
 */
-function requestSessionsGetKey(theUrl, sessionName){
+function requestSessionsGetKey(theUrl, sessionName, room, tas){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName);
+        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName, room, tas);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/generatekeys/", true); // true for asynchronous 
     xmlHttp.send(null);
@@ -434,7 +456,7 @@ function requestSessionsGetKey(theUrl, sessionName){
 * @param    {int}           publicKey   public key 
 * @param    {int}           privateKey  private key 
 */
-function callbackRequestSessionsGetActive(response, room, tas){
+function callbackRequestSessionsGetActive(response){
     // parse json response, then iterate through the response (to get each entry and display)
     response = JSON.parse(response);
     for (session in response["data"]){
@@ -446,6 +468,8 @@ function callbackRequestSessionsGetActive(response, room, tas){
             // create a time for when this entry was made
             let active = currentSession["active"];
             let sessionName = currentSession["session_name"];
+            let room = currentSession["room"];
+            let tas = currentSession["tas"];
             // create an entry object instance
             let newSession = new Session(sessionId, publicKey, active, sessionName, room, tas);
             // display on html page
@@ -459,11 +483,11 @@ function callbackRequestSessionsGetActive(response, room, tas){
 *
 * @param    {string}    theUrl      url for the host server
 */
-function requestSessionsGetActive(theUrl, room, tas){
+function requestSessionsGetActive(theUrl){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetActive(xmlHttp.responseText, room, tas);
+        callbackRequestSessionsGetActive(xmlHttp.responseText);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/active", true); // true for asynchronous 
     xmlHttp.send(null);
@@ -581,19 +605,26 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey){
 * @param    {string}    sessionName name of the session
 * @param    {int}       rowId       id of the row
 */
-function requestSessionsPatchSession(theUrl, active, sessionName, rowId){
+function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
         response = xmlHttp.responseText;
         window.location.reload();
     }
-    // if there's no session name, adjust URL
-    if (sessionName == ""){
-        xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+" "+"&rowid="+rowId, true); // true for asynchronous 
-    } else {
-        xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&rowid="+rowId, true); // true for asynchronous 
+    // if there's no entry for fields, set it to None
+    if(sessionName == ""){
+        sessionName = "None";
     }
+    if(room == ""){
+        room = "None";
+    }
+    if(tas == ""){
+        tas = "None";
+    }
+    console.log(room);
+    console.log(tas);
+    xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&room="+room+"&tas="+tas+"&rowid="+rowId, true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
@@ -611,8 +642,7 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response){
     response = JSON.parse(response);
     if ("data" in response){
         // delete the item
-        requestSessionsPatchSession(theUrl,0,"", response["data"]["session_id"]);
-        window.location.reload();
+        requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"]);
     } else {
         alert("Wrong private key.");
     }

@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title> TA Hours Queue </title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel='icon' href='favicon.ico' type='image/x-icon'/ >
-  </head>
-  <body onload="onLoad()">
+</head>
+<body onload="onLoadSessions()">
     <!--- Navbar --->
     <div>
-      <div style = "float: left">
-        <h1> TA Hours Queue </h1>
-      </div>
-      <div>
-        <ul>
-          <li><a href="home.html"> Home </a></li>
-          <li><a href="index.html"> Session </a></li>
-          <li><a href="#help"> Help </a></li>
-          <li><a href="#Contact"> Contact </a></li>
-        </ul>
-      </div>
+        <div style = "float: left">
+            <h1> TA Hours Queue </h1>
+        </div>
+        <div>
+            <ul>
+            <li><a href="index.html"> Home </a></li>
+            <li><a href="session.html"> Session </a></li>
+            <li><a href="#help"> Help </a></li>
+            <li><a href="#Contact"> Contact </a></li>
+            </ul>
+        </div>
     </div> 
     <!--- Body --->
     <br>
@@ -28,46 +28,34 @@
     <br>
     <center>
     <div id="top">
-      <h1> Session #1: Ford 242</h1>
+      <h1> Welcome to TA Hours!</h1>
       <!--- Form --->
-      <div style="width: 50%;">
-        Public Key:
-        <input type="text" id="publicKey" name="publicKey" value="110319">
-        <button onclick="keySubmit()">Enter</button>
-      </div>
-    </div>
-    <br>
-    <br>
-    <div id="left">
-      <div>
-        <!--- Form --->
+      Generate public key and private key
         <div id="form">
-          First name:<br>
-          <input type="text" id="firstName" name="firstname" value="Mickey">
-          <br>
-          Last name:<br>
-          <input type="text" id="lastName" name="lastname" value="Mouse">
-          <br><br>
-          <button onclick="formSubmit()">Submit</button>
-          <button onclick="archiveQueue()">Clear Queue</button>
+            Session Name (Course and Date):<br>
+            <input type="text" id="sessionName" name="sessionname" value="CSC 111 11/03/2019">
+            Room:<br>
+            <input type="text" id="room" name="roomname">
+            Teaching assistants available:<br>
+            <input type="text" id="taNames" name="tanames">
+            <br><br>
+            <button onclick="generateKeys()" style ="width:20%" >Generate</button>
         </div>
-      </div>
     </div>
-    <div id="center">
+    <br>
+    <br>
+    <div>
       <div>
-        <!--- Queue Entries --->
-        <div id="queueEntriesBox">
-          <h1> Queue: </h1>
-          <div id="queueEntries">
+        <!--- Session Entries --->
+        <div id="sessionEntriesBox">
+          <h1> Available TA Sessions: </h1>
+          <div id="sessionEntries">
 
           </div>
         </div>
       </div>
     </div>
-    <div id="right">
-      Current Public Key: <p id="publicKeyText"></p>
-    </div>
     </center>
-    <script src="script.js"></script>
-  </body>
+</body>
+<script src="script.js"></script>
 </html>

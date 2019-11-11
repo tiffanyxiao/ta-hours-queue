@@ -291,6 +291,12 @@ app.patch("/api/sessions/update", (req, res, next) => {
     if (!req.query.active){
         errors.push("No active value specified");
     }
+    if (!req.query.room){
+        errors.push("No room value specified");
+    }
+    if (!req.query.tas){
+        errors.push("No tas value specified");
+    }
     if (errors.length){
         res.status(400).json({"error":errors.join(",")});
         return;
@@ -298,14 +304,18 @@ app.patch("/api/sessions/update", (req, res, next) => {
     let data = {
         rowid: req.query.rowid,
         session_name: req.query.session_name,
-        active: req.query.active
+        active: req.query.active,
+        room: req.query.room,
+        tas: req.query.tas
     }
     db.run(
         `UPDATE sessions set 
            active = ?,
-           session_name =?
+           session_name = ?,
+           room = ?,
+           tas = ?
            WHERE rowid = ?`,
-        [data.active, data.session_name, data.rowid],
+        [data.active, data.session_name, data.room, data.tas, data.rowid],
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})
