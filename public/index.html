@@ -62,9 +62,20 @@
               
             </p>
             Entered Active Key Pairings:
-            <p id="activeKeysPara">
+            <p id="enteredKeysPara">
               
             </p>
+            <br>
+            Create a Key Pairing
+            <h6> Warning: The list will populate as long as the entered public key is valid. It does not check the private key!</h6>
+            <div id="form">
+              Public Key:<br>
+              <input type="text" id="publicKeyEntered" name="publickeyentered">
+              Private Key (Optional):<br>
+              <input type="text" id="privateKeyEntered" name="privatekeyentered" value="None">
+              <br><br>
+              <button onclick="createKeys()" style ="width:20%" >Enter Keys</button>
+            </div>
           </div>
         </div>
       </div>

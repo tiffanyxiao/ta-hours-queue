@@ -276,6 +276,18 @@ function generateKeys(){
     requestSessionsGetKey(url, sessionName, room, tas);
 }
 
+function createKeys(){
+    let publicKey = document.getElementById("publicKeyEntered").value;
+    let privateKey = document.getElementById("privateKeyEntered").value;
+    // catch edge case: if user enters nothing for private key 
+    if (!privateKey){
+        privateKey = "None";
+    }
+    // save the private key and public key pairing to localstorage (as enteredKeys)
+    localStorage.setItem("enteredKeys", JSON.stringify(addKeys(localStorage.getItem("enteredKeys"), privateKey, publicKey)));
+    window.location.reload();
+}
+
 /*
 * Function to add key pairings to a dictionary (used in generating keys and entering keys funcs)
 *
@@ -500,11 +512,26 @@ function callbackRequestSessionsGetActive(response){
             sessionToText(newSession);
         }
     }
-    // display valid active key pairings (if the key is no longer active, remove it from local storage)
-    keyPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+
+    // add html for the active keys (generated and entered)
+    addKeyHtml("generatedKeys","generatedKeysPara", activePublicKeys);
+    addKeyHtml("enteredKeys","enteredKeysPara", activePublicKeys);
+}
+
+/*
+* Function to add the html for keys (only if the session is active). If the session is no longer active,
+* remove the key from localStorage.
+*
+* @param    {string}    localStorageVariable    string name of the local storage variable
+* @param    {string}    divId                   id of the div to add the html to
+* @param    {list}      activePublicKeys        all currently active public keys      
+*/
+function addKeyHtml(localStorageVariable, divId, activePublicKeys){
+    // repeat for Entered Keys
+    keyPairingsDict = JSON.parse(localStorage.getItem(localStorageVariable));
     for (let key in keyPairingsDict){
         if (activePublicKeys.includes(key)){
-            let para = document.getElementById('generatedKeysPara');
+            let para = document.getElementById(divId);
             let nameText = document.createTextNode("Public Key: "+key+", Private Key: "+keyPairingsDict[key]);
             let lineBreak = document.createElement("br");
             para.appendChild(nameText);
@@ -512,6 +539,7 @@ function callbackRequestSessionsGetActive(response){
         }
         else {
             delete keyPairingsDict[key];
+            localStorage.setItem(localStorageVariable,JSON.stringify(keyPairingsDict));
         }
     }
 }
