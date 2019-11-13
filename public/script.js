@@ -148,12 +148,22 @@ function confirmActionSessions(url, publicKey){
 * 
 */ 
 function sessionsToQueue(url, publicKey){
-    let userEnteredKey = prompt('Enter public key to enter this session.');
-    if (userEnteredKey == publicKey){
+    // automatic check: if the publicKey is in localStorage 
+    generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    if ((publicKey in enteredKeysPairingsDict) || (publicKey in generatedKeysPairingsDict)){
         document.location.href = url+"session.html";
         localStorage.setItem("publicKey", publicKey);
-    } else {
-        alert("Wrong public key.");
+    } 
+    else{
+        // else: user enters the key by themselves
+        let userEnteredKey = prompt('Enter public key to enter this session.');
+        if (userEnteredKey == publicKey){
+            document.location.href = url+"session.html";
+            localStorage.setItem("publicKey", publicKey);
+        } else {
+            alert("Wrong public key.");
+        }
     }
 }
 
