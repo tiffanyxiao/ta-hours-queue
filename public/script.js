@@ -136,8 +136,19 @@ function entryToText(newEntry, date){
 * 
 */ 
 function confirmActionSessions(url, publicKey){
-    let userEnteredKey = prompt('Enter private key to delete this entry.');
-    requestSessionsGetKeyAuthSessions(url, publicKey, userEnteredKey);
+    // check if the dictionaries are empty, if they are then the user will manually enter key
+    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    if (generatedKeysPairingsDict){
+        let generatedPrivateKey = generatedKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthSessions(url, publicKey, generatedPrivateKey, "generated");
+    } else if (enteredKeysPairingsDict){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");
+    } else {
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuthSessions(url, publicKey, userEnteredKey, "manual");
+    }
 }
 
 /*
@@ -149,13 +160,21 @@ function confirmActionSessions(url, publicKey){
 */ 
 function sessionsToQueue(url, publicKey){
     // automatic check: if the publicKey is in localStorage 
-    generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
-    enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
-    if ((publicKey in enteredKeysPairingsDict) || (publicKey in generatedKeysPairingsDict)){
-        document.location.href = url+"session.html";
-        localStorage.setItem("publicKey", publicKey);
-    } 
-    else{
+    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    if (enteredKeysPairingsDict){
+        if (publicKey in enteredKeysPairingsDict){
+            document.location.href = url+"session.html";
+            localStorage.setItem("publicKey", publicKey);
+        } 
+    }
+    if (generatedKeysPairingsDict){
+        if (publicKey in generatedKeysPairingsDict){
+            document.location.href = url+"session.html";
+            localStorage.setItem("publicKey", publicKey);
+        } 
+    }
+    if (document.location.href != url+"session.html"){
         // else: user enters the key by themselves
         let userEnteredKey = prompt('Enter public key to enter this session.');
         if (userEnteredKey == publicKey){
@@ -713,13 +732,22 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
 *
 * @param    {string}        theUrl      url for the host server
 * @param    {JSON string}   response    response from api
+* @param    {string}        keyType     generated, entered or manual to indicate which key type its checking
 */
-function callbackRequestSessionsGetKeyAuthSessions(theUrl, response){
+function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, keyType){
+    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     response = JSON.parse(response);
     if ("data" in response){
         // delete the item
         requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"]);
-    } else {
+    } else if (!("data" in response) & (keyType == "generated") & (enteredKeysPairingsDict)){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");
+    } else if (!("data" in response) & (keyType == "entered")){
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuthSessions(url, publicKey, userEnteredKey, "manual");
+    } else{
         alert("Wrong private key.");
     }
 }
@@ -730,12 +758,13 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response){
 * @param    {string}    theUrl      url for the host server
 * @param    {int}       privateKey  the private key 
 * @param    {int}       publicKey   the public key
+* @param    {string}    keyType     generated, entered or manual to indicate which key type its checking
 */
-function requestSessionsGetKeyAuthSessions(theUrl, publicKey, privateKey){
+function requestSessionsGetKeyAuthSessions(theUrl, publicKey, privateKey, keyType){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKeyAuthSessions(theUrl, xmlHttp.responseText);
+        callbackRequestSessionsGetKeyAuthSessions(theUrl, xmlHttp.responseText, publicKey, keyType);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
     xmlHttp.send(null);
