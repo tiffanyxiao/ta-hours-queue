@@ -85,9 +85,20 @@ function clearQueue(){
 * 
 */ 
 function confirmAction(url,newEntryId){
+    // check if the dictionaries are empty, if they are then the user will manually enter key
+    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     let publicKeyText = localStorage.getItem("publicKey");
-    let userEnteredKey = prompt('Enter private key to delete this entry.');
-    requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, userEnteredKey);
+    if (generatedKeysPairingsDict){
+        let generatedPrivateKey = generatedKeysPairingsDict[publicKeyText];
+        requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, generatedPrivateKey, "generated");
+    } else if (enteredKeysPairingsDict){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKeyText];
+        requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, enteredPrivateKey, "entered");
+    } else {
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, userEnteredKey, "manual");
+    }
 }
 
 /*
@@ -160,21 +171,24 @@ function confirmActionSessions(url, publicKey){
 */ 
 function sessionsToQueue(url, publicKey){
     // automatic check: if the publicKey is in localStorage 
+    let worked = false;
     let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     if (enteredKeysPairingsDict){
         if (publicKey in enteredKeysPairingsDict){
             document.location.href = url+"session.html";
             localStorage.setItem("publicKey", publicKey);
+            worked = true;
         } 
     }
     if (generatedKeysPairingsDict){
         if (publicKey in generatedKeysPairingsDict){
             document.location.href = url+"session.html";
             localStorage.setItem("publicKey", publicKey);
+            worked = true;
         } 
     }
-    if (document.location.href != url+"session.html"){
+    if (!worked){
         // else: user enters the key by themselves
         let userEnteredKey = prompt('Enter public key to enter this session.');
         if (userEnteredKey == publicKey){
@@ -609,7 +623,7 @@ function callbackRequestSessionsGetPublicKey(response){
 * Request to get session id using only the public key, to be used for getting all entries with the id.
 *
 * @param    {string}    theUrl      url for the host server
-* @param    {int}       publicKey   the public key
+* @param    {string}    publicKey   the public key
 */
 function requestSessionsGetPublicKey(theUrl, publicKey){
     let xmlHttp = new XMLHttpRequest();
@@ -663,14 +677,24 @@ function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey){
 *
 * @param    {string}        theUrl      url for the host server
 * @param    {JSON string}   response    response from api
-* @param    {int}           newEntryId  id of the entry to be deleted
+* @param    {int}           newEntryId  id of the entry to be delete
+* @param    {string}        publicKey   the public key
+* @param    {string}        keyType     generated, entered or manual to indicate which key type its checking
 */
-function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId){
+function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId, publicKey, keyType){
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     response = JSON.parse(response);
     if ("data" in response){
         // delete the item
         requestQueueDeleteEntry(theUrl,newEntryId);
-    } else {
+    } else if (!("data" in response) & (keyType == "generated") & (enteredKeysPairingsDict)){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuth(url, newEntryId, publicKey, enteredPrivateKey, "entered");
+    } else if (!("data" in response) & (keyType == "entered")){
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuth(url, newEntryId, publicKey, userEnteredKey, "manual");
+    } else{
+        console.log("hello");
         alert("Wrong private key.");
     }
 }
@@ -680,14 +704,15 @@ function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId){
 *
 * @param    {string}    theUrl      url for the host server
 * @param    {int}       newEntryId  id of the entry to be deleted
-* @param    {int}       privateKey  the private key 
-* @param    {int}       publicKey   the public key
+* @param    {string}    privateKey  the private key 
+* @param    {string}    publicKey   the public key
+* @param    {string}    keyType     generated, entered or manual to indicate which key type its checking
 */
-function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey){
+function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey, keyType){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKeyAuth(theUrl, xmlHttp.responseText, newEntryId);
+        callbackRequestSessionsGetKeyAuth(theUrl, xmlHttp.responseText, newEntryId, publicKey, keyType);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
     xmlHttp.send(null);
@@ -735,7 +760,6 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
 * @param    {string}        keyType     generated, entered or manual to indicate which key type its checking
 */
 function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, keyType){
-    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     response = JSON.parse(response);
     if ("data" in response){
@@ -756,8 +780,8 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
 * Request to check if keys match in the sessions table, to patch a session.
 *
 * @param    {string}    theUrl      url for the host server
-* @param    {int}       privateKey  the private key 
-* @param    {int}       publicKey   the public key
+* @param    {string}    privateKey  the private key 
+* @param    {string}    publicKey   the public key
 * @param    {string}    keyType     generated, entered or manual to indicate which key type its checking
 */
 function requestSessionsGetKeyAuthSessions(theUrl, publicKey, privateKey, keyType){
