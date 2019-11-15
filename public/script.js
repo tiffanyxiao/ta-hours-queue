@@ -273,7 +273,20 @@ function formSubmit(){
 *
 */
 function archiveQueue(){
-    requestQueueGetId(url);
+    // check if the dictionaries are empty, if they are then the user will manually enter key
+    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    let publicKey = localStorage.getItem("publicKey");
+    if (generatedKeysPairingsDict){
+        let generatedPrivateKey = generatedKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthClearQueue(url, publicKey, generatedPrivateKey, "generated");
+    } else if (enteredKeysPairingsDict){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthClearQueue(url, publicKey, enteredPrivateKey, "entered");
+    } else {
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuthClearQueue(url, publicKey, userEnteredKey, "manual");
+    }
 }
 
 /*
@@ -348,6 +361,17 @@ function addKeys(currentDict, privateKey, publicKey){
     return currentDict;
 }
 
+function checkedEntry(){
+    // If checkbox is checked, active = 2, otherwise active = 1
+    let checkBox = document.getElementById("checkBox");
+    if (checkBox.checked){
+        alert("hello");
+    } else {
+        alert("goodbye");
+    }
+    // api call to update queue entry number
+}
+
 /* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
 
 /*
@@ -398,13 +422,59 @@ function requestQueueGetEntries(theUrl, session_id){
     xmlHttp.send(null);
 }
 
+
+
 /*
-* Callback function to update all entries' ids in the queue. Uses patch call.
+* Callback function for requestSessionsGetKeyAuth. Deletes the item if the response
+* indicates that there is a match for the public and private key.
+*
+* @param    {string}        theUrl      url for the host server
+* @param    {JSON string}   response    response from api
+* @param    {int}           newEntryId  id of the entry to be delete
+* @param    {string}        publicKey   the public key
+* @param    {string}        keyType     generated, entered or manual to indicate which key type its checking
+*/
+function callbackRequestSessionsGetKeyAuthClearQueue(theUrl, response, publicKey, keyType){
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    response = JSON.parse(response);
+    if ("data" in response){
+        requestQueueGetId(theUrl);
+    } else if (!("data" in response) & (keyType == "generated") & (enteredKeysPairingsDict)){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthClearQueue(url, publicKey, enteredPrivateKey, "entered");
+    } else if (!("data" in response) & (keyType == "entered")){
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuthClearQueue(url, publicKey, userEnteredKey, "manual");
+    } else{
+        alert("Wrong private key.");
+    }
+}
+
+/*
+* Request to check if keys match in the sessions table, to delete the entry.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       newEntryId  id of the entry to be deleted
+* @param    {string}    privateKey  the private key 
+* @param    {string}    publicKey   the public key
+* @param    {string}    keyType     generated, entered or manual to indicate which key type its checking
+*/
+function requestSessionsGetKeyAuthClearQueue(theUrl, publicKey, privateKey, keyType){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        callbackRequestSessionsGetKeyAuthClearQueue(theUrl, xmlHttp.responseText, publicKey, keyType);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+/*
+* Callback function to update all entries' active value in the queue. Uses patch call.
 *
 * @param    {JSON string}    response    response from API call
 */
 function callbackRequestQueueGetId(response){
-    clearQueue();
     response = JSON.parse(response);
     for (entry in response["data"]){
         currentEntry = response["data"][entry];
@@ -694,7 +764,6 @@ function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId, publicK
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuth(url, newEntryId, publicKey, userEnteredKey, "manual");
     } else{
-        console.log("hello");
         alert("Wrong private key.");
     }
 }
@@ -719,7 +788,7 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey, ke
 }
 
 /*
-* Request to update session to an active session with the session name.
+* Request to update session to active or inactive
 *
 * @param    {string}    theUrl      url for the host server
 * @param    {int}       active      0 for inactive, 1 for active
