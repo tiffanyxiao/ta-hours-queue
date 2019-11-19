@@ -261,6 +261,29 @@ app.post("/api/queue/", (req, res, next) => {
 })
 
 // endpoint to update an entry with 0 active status in queue table
+app.patch("/api/queue/update", (req, res, next) => {
+    let data = {
+        rowid: req.query.rowId,
+        active: req.query.active
+    }
+    db.run(
+        `UPDATE queue set 
+           active = ? 
+           WHERE rowid = ?`,
+        [data.active, data.rowid],
+        function (err, result) {
+            if (err){
+                res.status(400).json({"error": res.message})
+                return;
+            }
+            res.json({
+                message: "success",
+                changes: this.changes
+            })
+    });
+})
+
+/* // endpoint to update an entry with 0 active status in queue table
 app.patch("/api/queue/:rowid", (req, res, next) => {
     db.run(
         `UPDATE queue set 
@@ -278,6 +301,7 @@ app.patch("/api/queue/:rowid", (req, res, next) => {
             })
     });
 })
+ */
 
 // endpoint to update an entry with 1 active status and a session name in sessions table
 app.patch("/api/sessions/update", (req, res, next) => {

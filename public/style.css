@@ -100,13 +100,25 @@ button:hover {
   display: block;
   position: relative;
   padding-left: 35px;
-  margin-bottom: 12px;
+  margin-bottom: 0px;
   cursor: pointer;
   font-size: 22px;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+.container p{
+  font-size:15px; 
+  padding: 0px; 
+  margin: 0px;
+}
+
+.container .date{
+  font-size:10px; 
+  padding: 0px; 
+  margin: 0px;
 }
 
 /* Hide the browser's default checkbox */
@@ -121,8 +133,8 @@ button:hover {
 /* Create a custom checkbox */
 .checkmark {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 10px;
+  left: 10px;
   height: 25px;
   width: 25px;
   background-color: #eee;
@@ -164,11 +176,13 @@ button:hover {
 }
 
 
-#testEntry{
+#queueEntries .container{
   border-style: solid;
   border-width: 2px;
   border-color: white;
   padding: 10px;
   border-radius: 5px;
   color: black;
+  margin-bottom: 10px;
+  background-color: white;
 }

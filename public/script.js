@@ -105,10 +105,86 @@ function confirmAction(url,newEntryId){
 * Turn the entry instance into html to display.
 *
 * @param    {string}    newEntry    entry to turn into html
-* @param    {string}    date        date & time the entry was made by user
+* @param    {bool}      unchecked   bool representing if the box is checked
 */
-function entryToText(newEntry, date){
-    // create text elements
+function entryToText(newEntry, unchecked){
+    // if unchecked, show normally
+    if (unchecked){
+        // create text elements 
+        let namePara = document.createElement("p");
+        let nameText = document.createTextNode(newEntry.eFullName);
+        let datePara = document.createElement("p");
+        let dateText = document.createTextNode(newEntry.eTime);
+        let divText = document.createElement("div");
+        let divCheckbox = document.createElement("div");
+        let input = document.createElement("input");
+        let span = document.createElement("span");
+        let divAll = document.getElementById('queueEntries');
+        let label = document.createElement("label");
+
+        // set attributes
+        label.setAttribute("class","container");
+        datePara.setAttribute("class","date");
+        input.setAttribute("type","checkbox");
+        input.setAttribute("id","checkbox"+newEntry.id);
+        span.setAttribute("class","checkmark");
+
+        // set onclick function
+        input.onclick = function(){
+            checkedEntry(newEntry.id);
+        }
+
+        // append elements to queue element 
+        namePara.appendChild(nameText);
+        datePara.appendChild(dateText);
+        divText.appendChild(namePara);
+        divText.appendChild(datePara);
+        divCheckbox.appendChild(input);
+        divCheckbox.appendChild(span);
+        label.appendChild(divText);
+        label.appendChild(divCheckbox);
+        divAll.appendChild(label);
+    } else {    // else show grayed
+        // create text elements 
+        let namePara = document.createElement("p");
+        let nameText = document.createTextNode(newEntry.eFullName);
+        let datePara = document.createElement("p");
+        let dateText = document.createTextNode(newEntry.eTime);
+        let divText = document.createElement("div");
+        let divCheckbox = document.createElement("div");
+        let input = document.createElement("input");
+        let span = document.createElement("span");
+        let divAll = document.getElementById('queueEntries');
+        let label = document.createElement("label");
+
+        // set attributes
+        label.setAttribute("class","container");
+        datePara.setAttribute("class","date");
+        input.setAttribute("type","checkbox");
+        input.setAttribute("id","checkbox"+newEntry.id);
+        input.checked = true;
+        span.setAttribute("class","checkmark");
+        label.style.background = "gray";
+
+        // set onclick function
+        input.onclick = function(){
+            checkedEntry(newEntry.id);
+        }
+
+        // append elements to queue element 
+        namePara.appendChild(nameText);
+        datePara.appendChild(dateText);
+        divText.appendChild(namePara);
+        divText.appendChild(datePara);
+        divCheckbox.appendChild(input);
+        divCheckbox.appendChild(span);
+        label.appendChild(divText);
+        label.appendChild(divCheckbox);
+        divAll.appendChild(label);
+    }
+
+
+    /* // create text elements
     let para = document.createElement("p");
     let nameText = document.createTextNode(newEntry.eFullName);
     let dateText = document.createTextNode(" "+date+" ");
@@ -134,9 +210,25 @@ function entryToText(newEntry, date){
     para.appendChild(xText);
     para.appendChild(dateText);
     para.appendChild(img);
-    queue.appendChild(para);
+    queue.appendChild(para); */
 }
 
+/*
+* Function to do stuff when entry is checked off
+*
+*/
+function checkedEntry(id){
+    // If checkbox is checked, active = 2, otherwise active = 1
+    let checkBox = document.getElementById("checkbox"+id);
+    if (checkBox.checked){
+        alert("hello");
+        requestQueuePatchId(url, id, 2);
+    } else {
+        alert("goodbye");
+        requestQueuePatchId(url, id, 1);
+    }
+    // api call to update queue entry number
+}
 
 /*
 * Function to ask user to confirm delete action. Then, calls delete API call to delete
@@ -361,17 +453,6 @@ function addKeys(currentDict, privateKey, publicKey){
     return currentDict;
 }
 
-function checkedEntry(){
-    // If checkbox is checked, active = 2, otherwise active = 1
-    let checkBox = document.getElementById("checkBox");
-    if (checkBox.checked){
-        alert("hello");
-    } else {
-        alert("goodbye");
-    }
-    // api call to update queue entry number
-}
-
 /* ------------------------- API CALLS FOR QUEUE TABLE -------------------------  */
 
 /*
@@ -383,13 +464,15 @@ function checkedEntry(){
 function callbackRequestQueueGetEntries(response, session_id){
     // clear queue 
     clearQueue();
-    // parse json response, then iterate through the response (to get each entry and display)
+    // parse json response, then iterate through the response (to get each entry [saved in list] and display [after saving in list, to have checked at bottom])
+    let uncheckedList = [];
+    let checkedList = [];
     response = JSON.parse(response);
     if (response["data"]){
-        for (entry in response["data"]){
+        for (let entry in response["data"]){
             currentEntry = response["data"][entry];
             // only show if active is 1 and the session_id matches
-            if (currentEntry["active"]===1 & currentEntry["session_id"]===session_id){
+            if ((currentEntry["active"]===1 || currentEntry["active"]===2) & currentEntry["session_id"]===session_id){
                 let firstNameE = currentEntry["first_name"];
                 let lastNameE = currentEntry["last_name"];
                 // create a time for when this entry was made
@@ -399,11 +482,21 @@ function callbackRequestQueueGetEntries(response, session_id){
                 let active = currentEntry["active"];
                 // create an entry object instance
                 let newEntry = new Entry(firstNameE, lastNameE, time, id, active);
-                // display on html page
-                entryToText(newEntry, time);
+                if (currentEntry["active"]===1){
+                    uncheckedList.push(newEntry);
+                    console.log(newEntry.eFullName);
+                } else{
+                    checkedList.push(newEntry);
+                }
             }
         }
     }
+    uncheckedList.forEach(function(entry1){
+        entryToText(entry1, true);
+    });
+    checkedList.forEach(function(entry2){
+        entryToText(entry2, false);
+    });
 }
 
 /*
@@ -478,12 +571,13 @@ function callbackRequestQueueGetId(response){
     response = JSON.parse(response);
     for (entry in response["data"]){
         currentEntry = response["data"][entry];
-        requestQueuePatchId(url,currentEntry["person_id"]);
+        requestQueuePatchId(url,currentEntry["person_id"], 0);
     }
 }
 
 /*
-* Request to api queue get call to get entire table (to be used)
+* Request to api queue get call to get entire table (to be used to update all active 
+* values to 0)
 *
 * @param    {string}    theUrl      url for the host server
 */
@@ -502,16 +596,18 @@ function requestQueueGetId(theUrl){
 * Request to update all entries entered to active=0. 
 *
 * @param    {string}    theUrl      url for the host server
-* @params   {int}       params      id of the entry
+* @params   {int}       rowId       id of the entry
+* @params   {int}       active      active value of the entry to update to
 */
-function requestQueuePatchId(theUrl, params){
+function requestQueuePatchId(theUrl, rowId, active){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
             response = xmlHttp.responseText;
+            window.location.reload();
         }
     }
-    xmlHttp.open("PATCH", theUrl+"api/queue/"+params, true); // true for asynchronous 
+    xmlHttp.open("PATCH", theUrl+"api/queue/update?rowId="+rowId+"&active="+active, true); // true for asynchronous 
     xmlHttp.send();
 }
 
