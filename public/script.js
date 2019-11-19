@@ -109,80 +109,81 @@ function confirmAction(url,newEntryId){
 */
 function entryToText(newEntry, unchecked){
     // if unchecked, show normally
-    if (unchecked){
-        // create text elements 
-        let namePara = document.createElement("p");
-        let nameText = document.createTextNode(newEntry.eFullName);
-        let datePara = document.createElement("p");
-        let dateText = document.createTextNode(newEntry.eTime);
-        let divText = document.createElement("div");
-        let divCheckbox = document.createElement("div");
-        let input = document.createElement("input");
-        let span = document.createElement("span");
-        let divAll = document.getElementById('queueEntries');
-        let label = document.createElement("label");
+    // create text elements for entry on queue
+    let namePara = document.createElement("p");
+    let nameText = document.createTextNode(newEntry.eFullName);
+    let datePara = document.createElement("p");
+    let dateText = document.createTextNode(newEntry.eTime);
+    let divText = document.createElement("div");
+    let divCheckbox = document.createElement("div");
+    let input = document.createElement("input");
+    let span = document.createElement("span");
+    let divAll = document.getElementById('queueEntries');
+    let label = document.createElement("label");
 
-        // set attributes
-        label.setAttribute("class","container");
-        datePara.setAttribute("class","date");
-        input.setAttribute("type","checkbox");
-        input.setAttribute("id","checkbox"+newEntry.id);
-        span.setAttribute("class","checkmark");
+    // set attributes
+    label.setAttribute("class","container");
+    datePara.setAttribute("class","date");
+    input.setAttribute("type","checkbox");
+    input.setAttribute("id","checkbox"+newEntry.id);
+    span.setAttribute("class","checkmark");
 
-        // set onclick function
-        input.onclick = function(){
-            checkedEntry(newEntry.id);
-        }
-
-        // append elements to queue element 
-        namePara.appendChild(nameText);
-        datePara.appendChild(dateText);
-        divText.appendChild(namePara);
-        divText.appendChild(datePara);
-        divCheckbox.appendChild(input);
-        divCheckbox.appendChild(span);
-        label.appendChild(divText);
-        label.appendChild(divCheckbox);
-        divAll.appendChild(label);
-    } else {    // else show grayed
-        // create text elements 
-        let namePara = document.createElement("p");
-        let nameText = document.createTextNode(newEntry.eFullName);
-        let datePara = document.createElement("p");
-        let dateText = document.createTextNode(newEntry.eTime);
-        let divText = document.createElement("div");
-        let divCheckbox = document.createElement("div");
-        let input = document.createElement("input");
-        let span = document.createElement("span");
-        let divAll = document.getElementById('queueEntries');
-        let label = document.createElement("label");
-
-        // set attributes
-        label.setAttribute("class","container");
-        datePara.setAttribute("class","date");
-        input.setAttribute("type","checkbox");
-        input.setAttribute("id","checkbox"+newEntry.id);
-        input.checked = true;
-        span.setAttribute("class","checkmark");
-        label.style.background = "gray";
-
-        // set onclick function
-        input.onclick = function(){
-            checkedEntry(newEntry.id);
-        }
-
-        // append elements to queue element 
-        namePara.appendChild(nameText);
-        datePara.appendChild(dateText);
-        divText.appendChild(namePara);
-        divText.appendChild(datePara);
-        divCheckbox.appendChild(input);
-        divCheckbox.appendChild(span);
-        label.appendChild(divText);
-        label.appendChild(divCheckbox);
-        divAll.appendChild(label);
+    // set onclick function
+    input.onclick = function(){
+        checkedEntry(newEntry.id);
     }
 
+    // append elements to queue element 
+    namePara.appendChild(nameText);
+    datePara.appendChild(dateText);
+    divText.appendChild(namePara);
+    divText.appendChild(datePara);
+    divCheckbox.appendChild(input);
+    divCheckbox.appendChild(span);
+    label.appendChild(divText);
+    label.appendChild(divCheckbox);
+    divAll.appendChild(label);
+
+    // if the entry is unchecked, change the appearance 
+    if (!unchecked){
+        input.checked = true;
+        label.style.background = "gray";
+    }
+
+    /* MODAL FOR QUEUE ENTRY HTML CODE */
+    // create html elements for modal
+    let divModal = document.createElement("div");
+    let divModalContent = document.createElement("div");
+    let spanModalClose = document.createElement("span");
+    let modalPara = document.createElement("p");
+    let modalParaText = document.createTextNode("hello");
+    
+    // set attributes
+    divModal.setAttribute("id","myModal"+newEntry.id);
+    divModal.setAttribute("class","modal");
+    divModalContent.setAttribute("class","modal-content");
+    spanModalClose.setAttribute("class","close");
+
+    // append elements to divAll
+    divModalContent.appendChild(spanModalClose);
+    modalPara.appendChild(modalParaText);
+    divModalContent.appendChild(modalPara);
+    divModal.appendChild(divModalContent);
+    divAll.appendChild(divModal);
+
+    divAll.onclick = function(){
+        divModal.style.display = "block";
+    }
+
+    spanModalClose.onclick = function(){
+        divModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == divModal) {
+          modal.style.display = "none";
+        }
+      }
 
     /* // create text elements
     let para = document.createElement("p");
@@ -221,10 +222,8 @@ function checkedEntry(id){
     // If checkbox is checked, active = 2, otherwise active = 1
     let checkBox = document.getElementById("checkbox"+id);
     if (checkBox.checked){
-        alert("hello");
         requestQueuePatchId(url, id, 2);
     } else {
-        alert("goodbye");
         requestQueuePatchId(url, id, 1);
     }
     // api call to update queue entry number
@@ -472,7 +471,7 @@ function callbackRequestQueueGetEntries(response, session_id){
         for (let entry in response["data"]){
             currentEntry = response["data"][entry];
             // only show if active is 1 and the session_id matches
-            if ((currentEntry["active"]===1 || currentEntry["active"]===2) & currentEntry["session_id"]===session_id){
+            if ((currentEntry["active"]===1 || currentEntry["active"]===2) && currentEntry["session_id"]===session_id){
                 let firstNameE = currentEntry["first_name"];
                 let lastNameE = currentEntry["last_name"];
                 // create a time for when this entry was made
@@ -532,10 +531,10 @@ function callbackRequestSessionsGetKeyAuthClearQueue(theUrl, response, publicKey
     response = JSON.parse(response);
     if ("data" in response){
         requestQueueGetId(theUrl);
-    } else if (!("data" in response) & (keyType == "generated") & (enteredKeysPairingsDict)){
+    } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthClearQueue(url, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) & (keyType == "entered")){
+    } else if (!("data" in response) && (keyType == "entered")){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuthClearQueue(url, publicKey, userEnteredKey, "manual");
     } else{
@@ -853,10 +852,10 @@ function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId, publicK
     if ("data" in response){
         // delete the item
         requestQueueDeleteEntry(theUrl,newEntryId);
-    } else if (!("data" in response) & (keyType == "generated") & (enteredKeysPairingsDict)){
+    } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuth(url, newEntryId, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) & (keyType == "entered")){
+    } else if (!("data" in response) && (keyType == "entered")){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuth(url, newEntryId, publicKey, userEnteredKey, "manual");
     } else{
@@ -930,10 +929,10 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
     if ("data" in response){
         // delete the item
         requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"]);
-    } else if (!("data" in response) & (keyType == "generated") & (enteredKeysPairingsDict)){
+    } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) & (keyType == "entered")){
+    } else if (!("data" in response) && (keyType == "entered")){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuthSessions(url, publicKey, userEnteredKey, "manual");
     } else{
