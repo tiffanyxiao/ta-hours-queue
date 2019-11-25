@@ -15,18 +15,18 @@ To address these issues, I've created this sqlite database backed queue. At its 
 ### Queue
 Here are some of the current functionalities of the queue (for student names):
 Anybody can:
-*add their name to the queue
+* add their name to the queue
 TAs can: 
-*delete a name off a queue 
-*clear the entire queue (and thus, archiving all of the entries)
-*check a name off as "complete"
+* delete a name off a queue 
+* clear the entire queue (and thus, archiving all of the entries)
+* check a name off as "complete"
 
 ### Session
 Anybody can: 
-*start a session (which will effectively give them all TA functions)
-*add a public key and/or private key
+* start a session (which will effectively give them all TA functions)
+* add a public key and/or private key
 TAs can:
-*delete a session
+* delete a session
 
 # Author
 Tiffany Xiao
