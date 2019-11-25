@@ -118,7 +118,8 @@ function entryToText(newEntry, unchecked){
     let divCheckbox = document.createElement("div");
     let input = document.createElement("input");
     let span = document.createElement("span");
-    let divAll = document.getElementById('queueEntries');
+    let divAll = document.createElement("div");
+    let divQueue = document.getElementById('queueEntries')
     let label = document.createElement("label");
 
     // set attributes
@@ -127,11 +128,8 @@ function entryToText(newEntry, unchecked){
     input.setAttribute("type","checkbox");
     input.setAttribute("id","checkbox"+newEntry.id);
     span.setAttribute("class","checkmark");
-
-    // set onclick function
-    input.onclick = function(){
-        checkedEntry(newEntry.id);
-    }
+    divAll.setAttribute("class","divContainer");
+    divText.setAttribute("class", "entryText");
 
     // append elements to queue element 
     namePara.appendChild(nameText);
@@ -140,14 +138,15 @@ function entryToText(newEntry, unchecked){
     divText.appendChild(datePara);
     divCheckbox.appendChild(input);
     divCheckbox.appendChild(span);
-    label.appendChild(divText);
     label.appendChild(divCheckbox);
     divAll.appendChild(label);
+    divAll.appendChild(divText);
+    divQueue.appendChild(divAll);
 
     // if the entry is unchecked, change the appearance 
     if (!unchecked){
         input.checked = true;
-        label.style.background = "gray";
+        divAll.style.background = "gray";
     }
 
     /* MODAL FOR QUEUE ENTRY HTML CODE */
@@ -157,61 +156,44 @@ function entryToText(newEntry, unchecked){
     let spanModalClose = document.createElement("span");
     let modalPara = document.createElement("p");
     let modalParaText = document.createTextNode("hello");
+    let closeButton = document.createTextNode("close");
+    let img = document.createElement("img");
     
     // set attributes
     divModal.setAttribute("id","myModal"+newEntry.id);
     divModal.setAttribute("class","modal");
     divModalContent.setAttribute("class","modal-content");
     spanModalClose.setAttribute("class","close");
-
-    // append elements to divAll
-    divModalContent.appendChild(spanModalClose);
-    modalPara.appendChild(modalParaText);
-    divModalContent.appendChild(modalPara);
-    divModal.appendChild(divModalContent);
-    divAll.appendChild(divModal);
-
-    divAll.onclick = function(){
-        divModal.style.display = "block";
-    }
-
-    spanModalClose.onclick = function(){
-        divModal.style.display = "none";
-    }
-
-    window.onclick = function(event) {
-        if (event.target == divModal) {
-          modal.style.display = "none";
-        }
-      }
-
-    /* // create text elements
-    let para = document.createElement("p");
-    let nameText = document.createTextNode(newEntry.eFullName);
-    let dateText = document.createTextNode(" "+date+" ");
-    let lineBreak = document.createElement("br");
-    let queue = document.getElementById('queueEntries');
-    let xText = document.createTextNode("  ");
-    let img = document.createElement("img");
-
-    // set attributes if needed
-    para.setAttribute("class","queueEntry");
     img.setAttribute("src", "images/x-icon.png");
     img.setAttribute("height", "10");
     img.setAttribute("width", "10");
     img.setAttribute("alt", "x-out-button");
 
-    // set onclick function for deleting the entry (call confirmAction)
     img.onclick = function(){
         confirmAction(url,newEntry.id);
     }
 
-    // append elements to paragraph element (to add to queue box) 
-    para.appendChild(nameText);
-    para.appendChild(xText);
-    para.appendChild(dateText);
-    para.appendChild(img);
-    queue.appendChild(para); */
+    // set onclick function for check
+    input.onclick = function(){
+        checkedEntry(newEntry.id);
+    }
+
+    divText.onclick = function(){
+        divModal.style.display = "block";
+    }
+
+    divModal.onclick = function(){
+        divModal.style.display = "none";
+    }
+
+    // append elements to divAll
+    divModalContent.appendChild(spanModalClose);
+    modalPara.appendChild(modalParaText);
+    modalPara.appendChild(closeButton);
+    modalPara.appendChild(img);
+    divModalContent.appendChild(modalPara);
+    divModal.appendChild(divModalContent);
+    divAll.appendChild(divModal);
 }
 
 /*

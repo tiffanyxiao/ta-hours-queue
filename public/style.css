@@ -109,13 +109,13 @@ button:hover {
   user-select: none;
 }
 
-.container p{
+.entryText p{
   font-size:15px; 
   padding: 0px; 
   margin: 0px;
 }
 
-.container .date{
+.entryText .date{
   font-size:10px; 
   padding: 0px; 
   margin: 0px;
@@ -133,8 +133,8 @@ button:hover {
 /* Create a custom checkbox */
 .checkmark {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 0px;
+  left: 5px;
   height: 25px;
   width: 25px;
   background-color: #eee;
@@ -175,8 +175,7 @@ button:hover {
   transform: rotate(45deg);
 }
 
-
-#queueEntries .container{
+.divContainer{
   border-style: solid;
   border-width: 2px;
   border-color: white;
