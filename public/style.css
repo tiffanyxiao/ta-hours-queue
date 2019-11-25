@@ -76,22 +76,24 @@ button:hover {
   border-style: solid;
   border-width: 2px;
   border-color: white;
+  background-color: white;
   padding: 10px;
   border-radius: 5px;
   color: black;
 }
 
 #left{
-  width: 35%;
+  width: 33%;
   float: left;
 }
 
 #center{
-  width: 35%;
+  width: 33%;
   float: left;
 }
 
 #right{
+  width: 33%;
   float: left;
 }
 
@@ -222,4 +224,8 @@ button:hover {
   color: black;
   text-decoration: none;
   cursor: pointer;
+}
+
+.numberText{
+  color: red;
 }

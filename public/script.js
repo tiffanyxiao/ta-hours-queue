@@ -147,6 +147,7 @@ function entryToText(newEntry, unchecked){
     if (!unchecked){
         input.checked = true;
         divAll.style.background = "gray";
+        divAll.style.borderColor = "gray";
     }
 
     /* MODAL FOR QUEUE ENTRY HTML CODE */
@@ -370,8 +371,32 @@ function onLoad(){
     // get session id 
     let publicKeyText = localStorage.getItem("publicKey");
     requestSessionsGetPublicKey(url, publicKeyText);
-    let publicKeyTextArea = document.getElementById("publicKeyText");
-    publicKeyTextArea.append(publicKeyText);
+
+    // Get the modal
+    var modal = document.getElementById("taModalOptions");
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("taOptions");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks on the button, open the modal
+    btn.onclick = function() {
+        modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
 }
 
 /*
@@ -380,16 +405,6 @@ function onLoad(){
 */
 function onLoadSessions(){
     requestSessionsGetActive(url);
-}
-
-/* 
-* Button to submit public key to local storage's onclick function.
-*
-*/
-function keySubmit(){
-    let publicKey = document.getElementById("publicKey").value;
-    localStorage.setItem("publicKey", publicKey);
-    window.location.reload();
 }
 
 /* 
@@ -448,6 +463,9 @@ function callbackRequestQueueGetEntries(response, session_id){
     // parse json response, then iterate through the response (to get each entry [saved in list] and display [after saving in list, to have checked at bottom])
     let uncheckedList = [];
     let checkedList = [];
+    // also track number of people helped and number of people left
+    let numPeopleLeft = 0;
+    let numPeopleHelped = 0;
     response = JSON.parse(response);
     if (response["data"]){
         for (let entry in response["data"]){
@@ -464,14 +482,19 @@ function callbackRequestQueueGetEntries(response, session_id){
                 // create an entry object instance
                 let newEntry = new Entry(firstNameE, lastNameE, time, id, active);
                 if (currentEntry["active"]===1){
+                    numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
                     console.log(newEntry.eFullName);
                 } else{
+                    numPeopleHelped += 1;
                     checkedList.push(newEntry);
                 }
             }
         }
     }
+    // add number stats to page 
+    document.getElementById("numPeopleLeft").innerHTML = numPeopleLeft;
+    document.getElementById("numPeopleHelped").innerHTML = numPeopleHelped;
     uncheckedList.forEach(function(entry1){
         entryToText(entry1, true);
     });

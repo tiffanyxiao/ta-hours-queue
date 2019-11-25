@@ -29,14 +29,19 @@
     <center>
     <div id="top">
       <h1> Session #1: Ford 242</h1>
-      <!--- Form --->
-      <div style="width: 50%;">
-        Public Key:
-        <input type="text" id="publicKey" name="publicKey" value="110319">
-        <button onclick="keySubmit()">Enter</button>
+      <button style="width: 40%" id="taOptions">Open TA Options</button>
+
+      <!-- The Modal -->
+      <div id="taModalOptions" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <p>Some text in the Modal..</p>
+        </div>
+      
       </div>
     </div>
-    <br>
     <br>
     <div id="left">
       <div>
@@ -65,7 +70,8 @@
       </div>
     </div>
     <div id="right">
-      Current Public Key: <p id="publicKeyText"></p>
+      <p> Number of People Left on Queue: <p class="numberText" id="numPeopleLeft"></p></p>
+      <p> Total Number of People Helped: <p class="numberText" id="numPeopleHelped"></p></p>
     </div>
     </center>
     <script src="script.js"></script>
