@@ -513,9 +513,30 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
     document.getElementById("numPeopleLeft").innerHTML = numPeopleLeft;
     document.getElementById("numPeopleHelped").innerHTML = numPeopleHelped;
     // recommended time per student stats
+    let recTime = 0;
+    let numberWarning = "";
     if (timer/numPeopleLeft < 300){
-        document.getElementById("numTimeRec").innerHTML = "Warning: Cannot spend more than 5 minutes with each student, queue exceeds capacity";
+        if (timer/numPeopleLeft > 180){
+            recTime = 3;
+            numberWarning = "Warning: Cannot spend more than 3 minutes with each student, queue is near capacity";
+        } else {
+            recTime = 3;
+            let numPeopleCanHelp = Math.floor(timer/60/3);
+            numberWarning = "Warning: Queue is at capacity. \n Number of Students that can be helped: "+numPeopleCanHelp.toString()
+        }
+        // issue the warning
+        document.getElementById("numberWarning").innerHTML = numberWarning;
+    } else if (timer/numPeopleLeft === 300){
+        recTime = 5;
+    } else {
+        // each student gets at least 5 minutes 
+        if (numPeopleLeft < 3){
+            recTime = 10;
+        } else {
+            recTime = 5;
+        }
     }
+    document.getElementById("numTimeRec").innerHTML = recTime.toString() + " Minutes Per Student"
     uncheckedList.forEach(function(entry1){
         entryToText(entry1, true);
     });
