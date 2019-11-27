@@ -106,8 +106,9 @@ function confirmAction(url,newEntryId){
 *
 * @param    {string}    newEntry    entry to turn into html
 * @param    {bool}      unchecked   bool representing if the box is checked
+* @param    {bool}      redBorder   bool representing if the box should have a red border
 */
-function entryToText(newEntry, unchecked){
+function entryToText(newEntry, unchecked, redBorder){
     // if unchecked, show normally
     // create text elements for entry on queue
     let namePara = document.createElement("p");
@@ -148,6 +149,10 @@ function entryToText(newEntry, unchecked){
         input.checked = true;
         divAll.style.background = "gray";
         divAll.style.borderColor = "gray";
+    }
+
+    if (redBorder){
+        divAll.style.borderColor = "red";
     }
 
     /* MODAL FOR QUEUE ENTRY HTML CODE */
@@ -514,6 +519,7 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
     document.getElementById("numPeopleHelped").innerHTML = numPeopleHelped;
     // recommended time per student stats
     let recTime = 0;
+    let numPeopleCanHelp = numPeopleLeft;
     let numberWarning = "";
     if (timer/numPeopleLeft < 300){
         if (timer/numPeopleLeft > 180){
@@ -521,8 +527,8 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
             numberWarning = "Warning: Cannot spend more than 3 minutes with each student, queue is near capacity";
         } else {
             recTime = 3;
-            let numPeopleCanHelp = Math.floor(timer/60/3);
-            numberWarning = "Warning: Queue is at capacity. \n Number of Students that can be helped: "+numPeopleCanHelp.toString()
+            numPeopleCanHelp = Math.floor(timer/60/3);
+            numberWarning = "Warning: Queue is at capacity. \n Number of Students that can be helped: "+numPeopleCanHelp.toString()+" (last student to be helped is in red)";
         }
         // issue the warning
         document.getElementById("numberWarning").innerHTML = numberWarning;
@@ -537,11 +543,22 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
         }
     }
     document.getElementById("numTimeRec").innerHTML = recTime.toString() + " Minutes Per Student"
+    let numPeopleAdded = 0;
     uncheckedList.forEach(function(entry1){
-        entryToText(entry1, true);
+        numPeopleAdded += 1;
+        if (numPeopleCanHelp === numPeopleLeft){
+            entryToText(entry1, true, false);
+        } else {
+            if (numPeopleAdded === numPeopleCanHelp){
+                entryToText(entry1, true, true);
+            } else {
+                entryToText(entry1, true, false);
+            }
+            
+        }
     });
     checkedList.forEach(function(entry2){
-        entryToText(entry2, false);
+        entryToText(entry2, false, false);
     });
 }
 
