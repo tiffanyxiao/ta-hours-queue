@@ -159,22 +159,21 @@ app.get("/api/sessions", (req, res, next) => {
         return;
     }
     let data = {
-        public_key: req.query.public_key,
-        private_key: req.query.private_key
+        public_key: req.query.public_key
     }
     let sql ='select * from sessions where public_key=?';
-    let params =[data.public_key, data.private_key];
+    let params =[data.public_key];
     db.get(sql, params, function (err, rows) {
         if (err){
             res.status(400).json({"error": err.message})
             return;
         }
         if (rows){
-            response = rows["session_id"];
+            response = [rows["session_id"],rows["starttime"],rows["endtime"],rows["public_key"]];
         }
         res.json({
             "message": "success",
-            "data": rows
+            "data": response
         })
     });
 });
@@ -321,6 +320,12 @@ app.patch("/api/sessions/update", (req, res, next) => {
     if (!req.query.tas){
         errors.push("No tas value specified");
     }
+    if (!req.query.start){
+        errors.push("No start value specified");
+    }
+    if (!req.query.end){
+        errors.push("No end value specified");
+    }
     if (errors.length){
         res.status(400).json({"error":errors.join(",")});
         return;
@@ -330,16 +335,20 @@ app.patch("/api/sessions/update", (req, res, next) => {
         session_name: req.query.session_name,
         active: req.query.active,
         room: req.query.room,
-        tas: req.query.tas
+        tas: req.query.tas,
+        start: req.query.start,
+        end: req.query.end
     }
     db.run(
         `UPDATE sessions set 
            active = ?,
            session_name = ?,
            room = ?,
-           tas = ?
+           tas = ?, 
+           starttime = ?, 
+           endtime = ?
            WHERE rowid = ?`,
-        [data.active, data.session_name, data.room, data.tas, data.rowid],
+        [data.active, data.session_name, data.room, data.tas, data.start, data.end, data.rowid],
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})

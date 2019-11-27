@@ -417,7 +417,23 @@ function generateKeys(){
     let sessionName = document.getElementById("sessionName").value;
     let room = document.getElementById("room").value;
     let tas = document.getElementById("taNames").value;
-    requestSessionsGetKey(url, sessionName, room, tas);
+
+    // get start time
+    let startToday = new Date();
+    let start = document.getElementById("startTime").value;
+    let startTimeSplit = start.split(':');
+    startToday.setHours(0,0,0,0);
+    startToday.setTime(startToday.getTime()+(startTimeSplit[0]*60*60*1000)+(startTimeSplit[1]*60*1000));
+
+    // get end time
+    let endToday = new Date();
+    let end = document.getElementById("endTime").value;
+    let endTimeSplit = end.split(':');
+    endToday.setHours(0,0,0,0)
+    endToday.setTime(endToday.getTime()+(endTimeSplit[0]*60*60*1000)+(endTimeSplit[1]*60*1000));
+    
+    // call api
+    requestSessionsGetKey(url, sessionName, room, tas, startToday.getTime(), endToday.getTime());
 }
 
 function createKeys(){
@@ -456,8 +472,9 @@ function addKeys(currentDict, privateKey, publicKey){
 *
 * @param    {JSON string}   response    response string from API call
 * @param    {session_id}    int         id of the session (from session table id column)
+* @param    {int}           timer           number of seconds of timer
 */
-function callbackRequestQueueGetEntries(response, session_id){
+function callbackRequestQueueGetEntries(response, session_id, timer){
     // clear queue 
     clearQueue();
     // parse json response, then iterate through the response (to get each entry [saved in list] and display [after saving in list, to have checked at bottom])
@@ -495,6 +512,10 @@ function callbackRequestQueueGetEntries(response, session_id){
     // add number stats to page 
     document.getElementById("numPeopleLeft").innerHTML = numPeopleLeft;
     document.getElementById("numPeopleHelped").innerHTML = numPeopleHelped;
+    // recommended time per student stats
+    if (timer/numPeopleLeft < 300){
+        document.getElementById("numTimeRec").innerHTML = "Warning: Cannot spend more than 5 minutes with each student, queue exceeds capacity";
+    }
     uncheckedList.forEach(function(entry1){
         entryToText(entry1, true);
     });
@@ -508,12 +529,13 @@ function callbackRequestQueueGetEntries(response, session_id){
 *
 * @param    {string}    theUrl url      of the host server
 * @param    {int}       session_id      id of the session 
+* @param    {int}       timer           number of seconds of timer
 */
-function requestQueueGetEntries(theUrl, session_id){
+function requestQueueGetEntries(theUrl, session_id, timer){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestQueueGetEntries(xmlHttp.responseText, session_id);
+        callbackRequestQueueGetEntries(xmlHttp.responseText, session_id, timer);
     }
     xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
     xmlHttp.send(null);
@@ -666,8 +688,10 @@ function requestQueueDeleteEntry(theUrl, params){
 * @param    {string}        sessionName name for the session
 * @param    {string}        room        room for the session
 * @param    {string}        tas         tas for the session
+* @param    {int}           start       starttime of the session
+* @param    {int}           end         endtime of the session
 */
-function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas){
+function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas, start, end){
     response = JSON.parse(response);
     publicKey = response["data"]["public_key"];
     privateKey = response["data"]["private_key"];
@@ -676,7 +700,7 @@ function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas)
     localStorage.setItem("generatedKeys", JSON.stringify(addKeys(localStorage.getItem("generatedKeys"), privateKey, publicKey)));
     let rowId = response["data"]["session_id"];
     let active = 1;
-    requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId);
+    requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId, start, end);
 }
 
 /*
@@ -686,12 +710,14 @@ function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas)
 * @param    {string}    sessionName name for the session
 * @param    {string}    room        room for the session
 * @param    {string}    tas         tas for the session
+* @param    {int}       start       starttime of the session
+* @param    {int}       end         endtime of the session
 */
-function requestSessionsGetKey(theUrl, sessionName, room, tas){
+function requestSessionsGetKey(theUrl, sessionName, room, tas, start, end){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName, room, tas);
+        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName, room, tas, start, end);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/generatekeys/", true); // true for asynchronous 
     xmlHttp.send(null);
@@ -782,8 +808,48 @@ function callbackRequestSessionsGetPublicKey(response){
     response = JSON.parse(response);
     let session_id;
     if ("data" in response){
-        session_id = response["data"]["session_id"];
-        requestQueueGetEntries(url, session_id);
+        // store times in localStorage
+        localStorage.setItem("publicKey",response["data"][3])
+
+        let nameOfKey = "endtime" + response["data"][3];
+        if(!localStorage.getItem(nameOfKey)){
+            // do setting the current time
+            localStorage.setItem(nameOfKey, response["data"][2]);
+        } 
+        let nameOfStartKey = "starttime" + response["data"][3];
+        if(!localStorage.getItem(nameOfStartKey)){
+            // do setting the current time
+            localStorage.setItem(nameOfStartKey, response["data"][1]);
+        } 
+        let startTime = parseInt(localStorage.getItem(nameOfStartKey), 10);
+        let endTime = parseInt(localStorage.getItem(nameOfKey), 10);
+        let currentTime = new Date().getTime();
+
+        // if session hasn't begun, do nothing
+        let timer = Math.floor((endTime - currentTime) / 1000);
+        if (currentTime < startTime){
+            document.getElementById('timeLeft').textContent = "Session Not Started Yet";
+        } else {
+            document.getElementById('timeLeftSeconds').textContent = timer;
+    
+            // add time to html and increment 
+            setInterval(function(){
+                document.getElementById('timeLeftSeconds').textContent = --timer;
+                let seconds;
+                // indicate if session is over (then display that text)
+                if (timer > 0){
+                    seconds = new Date(timer * 1000).toISOString().substr(11, 8);
+                } else if (timer < 0){
+                    seconds = "Session Over"
+                }
+                document.getElementById('timeLeft').textContent = seconds;
+                
+            }, 1000);
+        }
+
+        // populate queue with entries
+        session_id = response["data"][0];
+        requestQueueGetEntries(url, session_id, timer);
     } else {
         session_id = null;
     }
@@ -817,7 +883,8 @@ function requestSessionsGetPublicKey(theUrl, publicKey){
 function getPostSessionId(response, theUrl, firstName, lastName){
     response = JSON.parse(response);
     if ("data" in response){
-        session_id = response["data"]["session_id"];
+        session_id = response["data"][0];
+        console.log("hello",session_id);
         requestQueuePostEntry(theUrl, firstName, lastName, session_id);
     }
 }
@@ -896,8 +963,10 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey, ke
 * @param    {string}    room        room of the session
 * @param    {string}    tas         tas of the session
 * @param    {int}       rowId       id of the row
+* @param    {int}       start       starttime of the session
+* @param    {int}       end         endtime of the session
 */
-function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId){
+function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId, start, end){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
@@ -914,7 +983,13 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
     if(tas == ""){
         tas = "None";
     }
-    xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&room="+room+"&tas="+tas+"&rowid="+rowId, true); // true for asynchronous 
+    if(isNaN(start)){
+        start = 0;
+    }
+    if(isNaN(end)){
+        end = 0;
+    }
+    xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&room="+room+"&tas="+tas+"&start="+start+"&end="+end+"&rowid="+rowId, true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
@@ -933,7 +1008,7 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
     response = JSON.parse(response);
     if ("data" in response){
         // delete the item
-        requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"]);
+        requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");
