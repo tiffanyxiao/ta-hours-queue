@@ -422,6 +422,9 @@ function generateKeys(){
     let sessionName = document.getElementById("sessionName").value;
     let room = document.getElementById("room").value;
     let tas = document.getElementById("taNames").value;
+    let recTime = document.getElementById("recTime").value;
+    let minTime = document.getElementById("minTime").value;
+    let maxTime = document.getElementById("maxTime").value;
 
     // get start time
     let startToday = new Date();
@@ -438,7 +441,7 @@ function generateKeys(){
     endToday.setTime(endToday.getTime()+(endTimeSplit[0]*60*60*1000)+(endTimeSplit[1]*60*1000));
     
     // call api
-    requestSessionsGetKey(url, sessionName, room, tas, startToday.getTime(), endToday.getTime());
+    requestSessionsGetKey(url, sessionName, room, tas, startToday.getTime(), endToday.getTime(), recTime, minTime, maxTime);
 }
 
 function createKeys(){
@@ -728,8 +731,11 @@ function requestQueueDeleteEntry(theUrl, params){
 * @param    {string}        tas         tas for the session
 * @param    {int}           start       starttime of the session
 * @param    {int}           end         endtime of the session
+* @param    {int}           recTime     recommended time per student for this session
+* @param    {int}           minTime     minimum time per student for this session
+* @param    {int}           maxTime     maximum time per student for this session
 */
-function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas, start, end){
+function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas, start, end, recTime, minTime, maxTime){
     response = JSON.parse(response);
     publicKey = response["data"]["public_key"];
     privateKey = response["data"]["private_key"];
@@ -750,12 +756,15 @@ function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas,
 * @param    {string}    tas         tas for the session
 * @param    {int}       start       starttime of the session
 * @param    {int}       end         endtime of the session
+* @param    {int}       recTime     recommended time per student for this session
+* @param    {int}       minTime     minimum time per student for this session
+* @param    {int}       maxTime     maximum time per student for this session
 */
-function requestSessionsGetKey(theUrl, sessionName, room, tas, start, end){
+function requestSessionsGetKey(theUrl, sessionName, room, tas, start, end, recTime, minTime, maxTime){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName, room, tas, start, end);
+        callbackRequestSessionsGetKey(xmlHttp.responseText, theUrl, sessionName, room, tas, start, end, recTime, minTime, maxTime);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/generatekeys/", true); // true for asynchronous 
     xmlHttp.send(null);
