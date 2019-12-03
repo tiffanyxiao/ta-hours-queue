@@ -441,7 +441,7 @@ function generateKeys(){
     endToday.setTime(endToday.getTime()+(endTimeSplit[0]*60*60*1000)+(endTimeSplit[1]*60*1000));
     
     // call api
-    requestSessionsGetKey(url, sessionName, room, tas, startToday.getTime(), endToday.getTime(), recTime, minTime, maxTime);
+    requestSessionsGetKey(url, sessionName, room, tas, startToday.getTime(), endToday.getTime(), parseInt(recTime), parseInt(minTime), parseInt(maxTime));
 }
 
 function createKeys(){
@@ -480,7 +480,7 @@ function addKeys(currentDict, privateKey, publicKey){
 *
 * @param    {JSON string}   response    response string from API call
 * @param    {session_id}    int         id of the session (from session table id column)
-* @param    {int}           timer           number of seconds of timer
+* @param    {int}           timer       number of seconds of timer
 */
 function callbackRequestQueueGetEntries(response, session_id, timer){
     // clear queue 
@@ -522,27 +522,31 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
     document.getElementById("numPeopleHelped").innerHTML = numPeopleHelped;
     // recommended time per student stats
     let recTime = 0;
+    // get minutes from local storage
+    let recMin = localStorage.getItem("recTime");
+    let minMin = localStorage.getItem("minTime");
+    let maxMin = localStorage.getItem("maxTime");
     let numPeopleCanHelp = numPeopleLeft;
     let numberWarning = "";
-    if (timer/numPeopleLeft < 300){
-        if (timer/numPeopleLeft > 180){
-            recTime = 3;
-            numberWarning = "Warning: Cannot spend more than 3 minutes with each student, queue is near capacity";
+    if (timer/numPeopleLeft < recMin*60){
+        if (timer/numPeopleLeft > minMin*60){
+            recTime = minMin;
+            numberWarning = "Warning: Cannot spend more than "+String(minMin)+" minutes with each student, queue is near capacity";
         } else {
-            recTime = 3;
-            numPeopleCanHelp = Math.floor(timer/60/3);
+            recTime = minMin;
+            numPeopleCanHelp = Math.floor(timer/60/minMin);
             numberWarning = "Warning: Queue is at capacity. \n Number of Students that can be helped: "+numPeopleCanHelp.toString()+" (last student to be helped is in red)";
         }
         // issue the warning
         document.getElementById("numberWarning").innerHTML = numberWarning;
-    } else if (timer/numPeopleLeft === 300){
-        recTime = 5;
+    } else if (timer/numPeopleLeft === recMin*60){
+        recTime = recMin;
     } else {
         // each student gets at least 5 minutes 
-        if (numPeopleLeft < 3){
-            recTime = 10;
+        if (numPeopleLeft < 4){
+            recTime = maxMin;
         } else {
-            recTime = 5;
+            recTime = recMin;
         }
     }
     document.getElementById("numTimeRec").innerHTML = recTime.toString() + " Minutes Per Student"
@@ -744,7 +748,7 @@ function callbackRequestSessionsGetKey(response, theUrl, sessionName, room, tas,
     localStorage.setItem("generatedKeys", JSON.stringify(addKeys(localStorage.getItem("generatedKeys"), privateKey, publicKey)));
     let rowId = response["data"]["session_id"];
     let active = 1;
-    requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId, start, end);
+    requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId, start, end, recTime, minTime, maxTime);
 }
 
 /*
@@ -856,7 +860,11 @@ function callbackRequestSessionsGetPublicKey(response){
     let session_id;
     if ("data" in response){
         // store times in localStorage
-        localStorage.setItem("publicKey",response["data"][3])
+        localStorage.setItem("publicKey",response["data"][3]);
+        localStorage.setItem("recTime",response["data"][4]);
+        localStorage.setItem("minTime",response["data"][5]);
+        localStorage.setItem("maxTime",response["data"][6]);
+
 
         let nameOfKey = "endtime" + response["data"][3];
         if(!localStorage.getItem(nameOfKey)){
@@ -1012,8 +1020,11 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey, ke
 * @param    {int}       rowId       id of the row
 * @param    {int}       start       starttime of the session
 * @param    {int}       end         endtime of the session
+* @param    {int}       recTime     recommended time per student for this session
+* @param    {int}       minTime     minimum time per student for this session
+* @param    {int}       maxTime     maximum time per student for this session
 */
-function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId, start, end){
+function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, rowId, start, end, recTime, minTime, maxTime){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
@@ -1036,7 +1047,16 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
     if(isNaN(end)){
         end = 0;
     }
-    xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&room="+room+"&tas="+tas+"&start="+start+"&end="+end+"&rowid="+rowId, true); // true for asynchronous 
+    if(isNaN(recTime)){
+        recTime = 0;
+    }
+    if(isNaN(minTime)){
+        minTime = 0;
+    }
+    if(isNaN(maxTime)){
+        maxTime = 0;
+    }
+    xmlHttp.open("PATCH", theUrl+"api/sessions/update/?active="+active+"&session_name="+sessionName+"&room="+room+"&tas="+tas+"&start="+start+"&end="+end+"&rec_min="+recTime+"&min_min="+minTime+"&max_min="+maxTime+"&rowid="+rowId, true); // true for asynchronous 
     xmlHttp.send(null);
 }
 
@@ -1054,8 +1074,10 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     response = JSON.parse(response);
     if ("data" in response){
-        // delete the item
-        requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0);
+        // delete the session and all the localStorage time variables associated with it 
+        localStorage.removeItem("starttime"+publicKey);
+        localStorage.removeItem("endtime"+publicKey);
+        requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0, 0, 0, 0);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");

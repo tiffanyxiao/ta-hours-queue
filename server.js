@@ -169,7 +169,7 @@ app.get("/api/sessions", (req, res, next) => {
             return;
         }
         if (rows){
-            response = [rows["session_id"],rows["starttime"],rows["endtime"],rows["public_key"]];
+            response = [rows["session_id"],rows["starttime"],rows["endtime"],rows["public_key"],rows["rec_min"], rows["min_min"], rows["max_min"]];
         }
         res.json({
             "message": "success",
@@ -326,6 +326,15 @@ app.patch("/api/sessions/update", (req, res, next) => {
     if (!req.query.end){
         errors.push("No end value specified");
     }
+    if (!req.query.rec_min){
+        errors.push("No reccomended minutes value specified");
+    }
+    if (!req.query.min_min){
+        errors.push("No minimum minutes value specified");
+    }
+    if (!req.query.max_min){
+        errors.push("No maximum minutes value specified");
+    }
     if (errors.length){
         res.status(400).json({"error":errors.join(",")});
         return;
@@ -337,7 +346,10 @@ app.patch("/api/sessions/update", (req, res, next) => {
         room: req.query.room,
         tas: req.query.tas,
         start: req.query.start,
-        end: req.query.end
+        end: req.query.end,
+        rec_min: req.query.rec_min,
+        min_min: req.query.min_min,
+        max_min: req.query.max_min
     }
     db.run(
         `UPDATE sessions set 
@@ -346,9 +358,12 @@ app.patch("/api/sessions/update", (req, res, next) => {
            room = ?,
            tas = ?, 
            starttime = ?, 
-           endtime = ?
+           endtime = ?,
+           rec_min = ?,
+           min_min = ?,
+           max_min = ?
            WHERE rowid = ?`,
-        [data.active, data.session_name, data.room, data.tas, data.start, data.end, data.rowid],
+        [data.active, data.session_name, data.room, data.tas, data.start, data.end, data.rec_min, data.min_min, data.max_min, data.rowid],
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})
