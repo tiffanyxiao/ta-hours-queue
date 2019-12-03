@@ -782,15 +782,15 @@ function requestSessionsGetKey(theUrl, sessionName, room, tas, start, end, recTi
 function callbackRequestSessionsGetActive(response){
     // parse json response, then iterate through the response (to get each entry and display)
     response = JSON.parse(response);
-    // also save public keys for deleting non-active ones off the localStorage
-    activePublicKeys = []
+    // also save public keys and session names for deleting non-active ones off the localStorage
+    let activePublicKeys = [];
+    let activeSessionNames = {};
     for (session in response["data"]){
         currentSession = response["data"][session];
         // only show if active is 1 and the session_id matches
         if (currentSession["active"]===1){
             let sessionId = currentSession["session_id"];
             let publicKey = currentSession["public_key"];
-            activePublicKeys.push(publicKey);
             // create a time for when this entry was made
             let active = currentSession["active"];
             let sessionName = currentSession["session_name"];
@@ -800,12 +800,15 @@ function callbackRequestSessionsGetActive(response){
             let newSession = new Session(sessionId, publicKey, active, sessionName, room, tas);
             // display on html page
             sessionToText(newSession);
+            // push needed information to activePublicKeys and activeSessionNames
+            activePublicKeys.push(publicKey);
+            activeSessionNames[publicKey] = sessionName;
         }
     }
 
     // add html for the active keys (generated and entered)
-    addKeyHtml("generatedKeys","generatedKeysPara", activePublicKeys);
-    addKeyHtml("enteredKeys","enteredKeysPara", activePublicKeys);
+    addKeyHtml("generatedKeys","generatedKeysPara", activePublicKeys, activeSessionNames);
+    addKeyHtml("enteredKeys","enteredKeysPara", activePublicKeys, activeSessionNames);
 }
 
 /*
@@ -814,16 +817,19 @@ function callbackRequestSessionsGetActive(response){
 *
 * @param    {string}    localStorageVariable    string name of the local storage variable
 * @param    {string}    divId                   id of the div to add the html to
-* @param    {list}      activePublicKeys        all currently active public keys      
+* @param    {list}      activePublicKeys        all currently active public keys   
+* @param    {dict}      activeSessionNames      all currently active session names, mapped to a public key    
 */
-function addKeyHtml(localStorageVariable, divId, activePublicKeys){
+function addKeyHtml(localStorageVariable, divId, activePublicKeys, activeSessionNames){
     // repeat for Entered Keys
     keyPairingsDict = JSON.parse(localStorage.getItem(localStorageVariable));
     for (let key in keyPairingsDict){
         if (activePublicKeys.includes(key)){
             let para = document.getElementById(divId);
-            let nameText = document.createTextNode("Public Key: "+key+", Private Key: "+keyPairingsDict[key]);
+            let sessionText = document.createTextNode("Session Name: "+activeSessionNames[key]);
+            let nameText = document.createTextNode(" | Public Key: "+key+", Private Key: "+keyPairingsDict[key]);
             let lineBreak = document.createElement("br");
+            para.appendChild(sessionText);
             para.appendChild(nameText);
             para.appendChild(lineBreak);
         }
