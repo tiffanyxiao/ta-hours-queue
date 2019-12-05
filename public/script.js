@@ -383,14 +383,28 @@ function onLoad(){
         requestSessionsGetPublicKey(url, publicKeyText)
     },2000);
 
+    // populate queue form with the TA options 
+    // get TA dropdown 
+    let TAdropdown = document.getElementById("TAdropdown");
+    // get list of TAs 
+    let TAsList = localStorage.getItem("TAs").split(",");
+    // add each TA to the dropdown 
+    TAsList.forEach(ta => {
+        let option = document.createElement("option");
+        let optionText = document.createTextNode(ta);
+        option.setAttribute("value",ta);
+        option.appendChild(optionText);
+        TAdropdown.appendChild(option);
+    });
+
     // Get the modal
-    var modal = document.getElementById("taModalOptions");
+    let modal = document.getElementById("taModalOptions");
 
     // Get the button that opens the modal
-    var btn = document.getElementById("taOptions");
+    let btn = document.getElementById("taOptions");
 
     // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
+    let span = document.getElementsByClassName("close")[0];
 
     // When the user clicks on the button, open the modal
     btn.onclick = function() {
@@ -1101,6 +1115,7 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
         localStorage.removeItem("starttime"+publicKey);
         localStorage.removeItem("endtime"+publicKey);
         localStorage.removeItem("publicKey");
+        localStorage.removeItem("TAs");
         requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0, 0, 0, 0);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
