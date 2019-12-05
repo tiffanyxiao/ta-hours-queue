@@ -70,17 +70,11 @@ class Session{
 /* ------------------------- REGULAR JAVASCRIPT FUNCTION CALLS ------------------------- */ 
 
 /*
-* Function to clear all HTML code from queue.
+* Function to clear the html from a div by ID
+*
 */
-function clearQueue(){
-    document.getElementById("queueEntries").innerHTML = "";
-}
-
-/*
-* Function to clear all HTML code from sessions.
-*/
-function clearSessions(){
-    document.getElementById("sessionEntries").innerHTML = "";
+function clearHtml(divId){
+    document.getElementById(divId).innerHTML = "";
 }
 
 /*
@@ -500,7 +494,7 @@ function addKeys(currentDict, privateKey, publicKey){
 */
 function callbackRequestQueueGetEntries(response, session_id, timer){
     // clear queue 
-    clearQueue();
+    clearHtml("queueEntries");
     // parse json response, then iterate through the response (to get each entry [saved in list] and display [after saving in list, to have checked at bottom])
     let uncheckedList = [];
     let checkedList = [];
@@ -796,7 +790,7 @@ function requestSessionsGetKey(theUrl, sessionName, room, tas, start, end, recTi
 * @param    {JSON string}   response    response from api
 */
 function callbackRequestSessionsGetActive(response){
-    clearSessions();
+    clearHtml("sessionEntries");
     // parse json response, then iterate through the response (to get each entry and display)
     response = JSON.parse(response);
     // also save public keys and session names for deleting non-active ones off the localStorage
@@ -824,6 +818,8 @@ function callbackRequestSessionsGetActive(response){
     }
 
     // add html for the active keys (generated and entered)
+    clearHtml("generatedKeysPara");
+    clearHtml("enteredKeysPara");
     addKeyHtml("generatedKeys","generatedKeysPara", activePublicKeys, activeSessionNames);
     addKeyHtml("enteredKeys","enteredKeysPara", activePublicKeys, activeSessionNames);
 }
