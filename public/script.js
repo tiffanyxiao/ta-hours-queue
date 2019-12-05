@@ -77,6 +77,13 @@ function clearQueue(){
 }
 
 /*
+* Function to clear all HTML code from sessions.
+*/
+function clearSessions(){
+    document.getElementById("sessionEntries").innerHTML = "";
+}
+
+/*
 * Function to ask user to confirm delete action. Then, calls delete API call to delete
 * entry from queue table.
 * 
@@ -372,10 +379,15 @@ function archiveQueue(){
 * Onload function for the queue page. Loads queue and the public key (from local storage).
 *
 */
-function onLoad(){
+function onLoad(){    
     // get session id 
     let publicKeyText = localStorage.getItem("publicKey");
+
     requestSessionsGetPublicKey(url, publicKeyText);
+    // reload queue constantly
+    setInterval(function (){
+        requestSessionsGetPublicKey(url, publicKeyText)
+    },2000);
 
     // Get the modal
     var modal = document.getElementById("taModalOptions");
@@ -410,6 +422,10 @@ function onLoad(){
 */
 function onLoadSessions(){
     requestSessionsGetActive(url);
+    // reload sessions constantly
+    setInterval(function (){
+        requestSessionsGetActive(url)
+    },2000);
 }
 
 /* 
@@ -780,6 +796,7 @@ function requestSessionsGetKey(theUrl, sessionName, room, tas, start, end, recTi
 * @param    {JSON string}   response    response from api
 */
 function callbackRequestSessionsGetActive(response){
+    clearSessions();
     // parse json response, then iterate through the response (to get each entry and display)
     response = JSON.parse(response);
     // also save public keys and session names for deleting non-active ones off the localStorage
@@ -871,7 +888,6 @@ function callbackRequestSessionsGetPublicKey(response){
         localStorage.setItem("minTime",response["data"][5]);
         localStorage.setItem("maxTime",response["data"][6]);
 
-
         let nameOfKey = "endtime" + response["data"][3];
         if(!localStorage.getItem(nameOfKey)){
             // do setting the current time
@@ -945,7 +961,6 @@ function getPostSessionId(response, theUrl, firstName, lastName){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"][0];
-        console.log("hello",session_id);
         requestQueuePostEntry(theUrl, firstName, lastName, session_id);
     }
 }
@@ -1112,6 +1127,3 @@ function requestSessionsGetKeyAuthSessions(theUrl, publicKey, privateKey, keyTyp
     xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
     xmlHttp.send(null);
 }
-// setTimeout(function(){
-//     window.location.reload(1);
-//  }, 5000);
