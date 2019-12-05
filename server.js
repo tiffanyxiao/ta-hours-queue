@@ -232,6 +232,9 @@ app.post("/api/queue/", (req, res, next) => {
     if (!req.query.session_id){
         errors.push("No session_id specified");
     }
+    if (!req.query.ta){
+        errors.push("No ta specified");
+    }
     if (errors.length){
         console.log(req);
         res.status(400).json({"error":errors.join(",")});
@@ -240,12 +243,12 @@ app.post("/api/queue/", (req, res, next) => {
     let data = {
         first_name: req.query.first_name,
         last_name: req.query.last_name,
-        time: req.query.time,
         active: 1,
-        session_id: req.query.session_id
+        session_id: req.query.session_id,
+        ta: req.query.ta
     }
-    let sql ='INSERT INTO queue(first_name, last_name, active, session_id) VALUES (?, ?, ?, ?)'
-    let params =[data.first_name, data.last_name, data.active, data.session_id];
+    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta) VALUES (?, ?, ?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})

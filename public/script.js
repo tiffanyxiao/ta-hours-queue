@@ -20,13 +20,15 @@ class Entry{
     *
     * @param    {string}    firstName   The first name of the student (of this entry).
     * @param    {string}    lastName    The last name of the student (of this entry).
+    * @param    {string}    ta          The ta selected for this entry.
     * @param    {time}      int         The time this entry was created.
     * @param    {id}        int         id for this entry. Correlates to the rowid of database.
     * @param    {active}    int         Either 0 or 1. 0 for non-active entry, 1 for active entry.
     */
-    constructor(firstName, lastName, time, id, active){
+    constructor(firstName, lastName, ta, time, id, active){
         this.eFirstName = firstName;
         this.eLastName = lastName;
+        this.eTA = ta;
         this.eDescription = "";
         this.eTime = time;
         this.id = id;
@@ -332,8 +334,9 @@ function createEntry(){
     // get the info from html element by ID
     let firstNameE = document.getElementById("firstName").value;
     let lastNameE = document.getElementById("lastName").value;
+    let TAe = document.getElementById("TAdropdown").value;
     // create an entry object instance
-    let newEntry = new Entry(firstNameE, lastNameE);
+    let newEntry = new Entry(firstNameE, lastNameE, TAe);
     return newEntry;
 }
 
@@ -344,7 +347,7 @@ function createEntry(){
 function formSubmit(){
     let sampleEntry = createEntry();
     let publicKeyText = localStorage.getItem("publicKey");
-    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText);
+    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA);
     requestSessionsGetPublicKey(url, publicKeyText);
 }
 
@@ -714,8 +717,9 @@ function requestQueuePatchId(theUrl, rowId, active){
 * @param    {string}    lastName    last name for the entry
 * @param    {int}       time        time for the entry (numeric numbers only)
 * @param    {int}       session_id  id for the session    
+* @param    {string}    ta          name of TA selected for this entry  
 */
-function requestQueuePostEntry(theUrl, firstName, lastName, session_id){
+function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta){
     let response;
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -723,7 +727,7 @@ function requestQueuePostEntry(theUrl, firstName, lastName, session_id){
             response = xmlHttp.responseText;
         }
     }
-    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id;
+    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta;
     xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
     xmlHttp.send();
     return response;
@@ -972,12 +976,13 @@ function requestSessionsGetPublicKey(theUrl, publicKey){
 * @param    {string}        theUrl      url for the host server
 * @param    {string}        firstName   first name for the entry
 * @param    {string}        lastName    last name for the entry
+* @param    {string}        ta          ta selected for this entry
 */
-function getPostSessionId(response, theUrl, firstName, lastName){
+function getPostSessionId(response, theUrl, firstName, lastName, ta){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"][0];
-        requestQueuePostEntry(theUrl, firstName, lastName, session_id);
+        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta);
     }
 }
 
@@ -989,12 +994,13 @@ function getPostSessionId(response, theUrl, firstName, lastName){
 * @param    {string}        firstName   first name for the entry
 * @param    {string}        lastName    last name for the entry
 * @param    {string}        publicKey   public key for the entry
+* @param    {string}        ta          ta selected for this entry
 */
-function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey){
+function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName);
+            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);
