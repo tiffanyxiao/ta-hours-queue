@@ -877,12 +877,16 @@ function requestSessionsGetActive(theUrl){
 function callbackRequestSessionsGetPublicKey(response){
     response = JSON.parse(response);
     let session_id;
+    // get "no session loaded" heading
+    let session = document.getElementById('sessionLoadedHeading');
     if ("data" in response){
-        // store times in localStorage
+        session.style.display = "none";
+        // store items in localStorage
         localStorage.setItem("publicKey",response["data"][3]);
         localStorage.setItem("recTime",response["data"][4]);
         localStorage.setItem("minTime",response["data"][5]);
         localStorage.setItem("maxTime",response["data"][6]);
+        localStorage.setItem("TAs",response["data"][7]);
 
         let nameOfKey = "endtime" + response["data"][3];
         if(!localStorage.getItem(nameOfKey)){
@@ -924,6 +928,8 @@ function callbackRequestSessionsGetPublicKey(response){
         session_id = response["data"][0];
         requestQueueGetEntries(url, session_id, timer);
     } else {
+        // let user know no session has been loaded
+        session.style.display = "block";
         session_id = null;
     }
 }
@@ -1094,6 +1100,7 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
         // delete the session and all the localStorage time variables associated with it 
         localStorage.removeItem("starttime"+publicKey);
         localStorage.removeItem("endtime"+publicKey);
+        localStorage.removeItem("publicKey");
         requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0, 0, 0, 0);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
