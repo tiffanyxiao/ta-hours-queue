@@ -7,8 +7,10 @@
 * naming convention for callback functions: callback{RequestName}
 */
 
-//let url = "https://mysterious-headland-07008.herokuapp.com/";
+// let url = "https://mysterious-headland-07008.herokuapp.com/";
 let url = "http://localhost:8000/";
+// paused variable pauses any reloading functions currently loading
+let paused = false; 
 
 /* 
 * Each instance of the Entry class represents an entry in the queue for a single session. 
@@ -164,6 +166,8 @@ function entryToText(newEntry, unchecked, redBorder){
     let divModalContent = document.createElement("div");
     let spanModalClose = document.createElement("span");
     let modalPara = document.createElement("p");
+    // add selected text elements into modal
+    let taText = document.createTextNode(newEntry.eTA);
     let modalParaText = document.createTextNode("hello");
     let closeButton = document.createTextNode("close");
     let img = document.createElement("img");
@@ -189,14 +193,17 @@ function entryToText(newEntry, unchecked, redBorder){
 
     divText.onclick = function(){
         divModal.style.display = "block";
+        paused = true;
     }
 
     divModal.onclick = function(){
         divModal.style.display = "none";
+        paused = false;
     }
 
     // append elements to divAll
     divModalContent.appendChild(spanModalClose);
+    modalPara.appendChild(taText);
     modalPara.appendChild(modalParaText);
     modalPara.appendChild(closeButton);
     modalPara.appendChild(img);
@@ -383,7 +390,10 @@ function onLoad(){
     requestSessionsGetPublicKey(url, publicKeyText);
     // reload queue constantly
     setInterval(function (){
-        requestSessionsGetPublicKey(url, publicKeyText)
+        if(!paused){
+            console.log("hello");
+            requestSessionsGetPublicKey(url, publicKeyText)
+        }
     },2000);
 
     // populate queue form with the TA options 
@@ -412,17 +422,20 @@ function onLoad(){
     // When the user clicks on the button, open the modal
     btn.onclick = function() {
         modal.style.display = "block";
+        paused = true;
     }
 
     // When the user clicks on <span> (x), close the modal
     span.onclick = function() {
         modal.style.display = "none";
+        paused = false;
     }
 
     // When the user clicks anywhere outside of the modal, close it
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = "none";
+            paused = false;
         }
     }
 }
@@ -526,13 +539,14 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
             if ((currentEntry["active"]===1 || currentEntry["active"]===2) && currentEntry["session_id"]===session_id){
                 let firstNameE = currentEntry["first_name"];
                 let lastNameE = currentEntry["last_name"];
+                let TAe = currentEntry["ta"];
                 // create a time for when this entry was made
                 let tempTime = new Date(currentEntry["timestamp"]);
                 let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
                 let id = currentEntry["person_id"];
                 let active = currentEntry["active"];
                 // create an entry object instance
-                let newEntry = new Entry(firstNameE, lastNameE, time, id, active);
+                let newEntry = new Entry(firstNameE, lastNameE, TAe, time, id, active);
                 if (currentEntry["active"]===1){
                     numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
