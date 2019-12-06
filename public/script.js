@@ -166,10 +166,11 @@ function entryToText(newEntry, unchecked, redBorder){
     let divModalContent = document.createElement("div");
     let spanModalClose = document.createElement("span");
     let modalPara = document.createElement("p");
+    let br = document.createElement("br");
     // add selected text elements into modal
-    let taText = document.createTextNode(newEntry.eTA);
-    let modalParaText = document.createTextNode("hello");
-    let closeButton = document.createTextNode("close");
+    addTextToDiv(modalPara, "Requested TA: ", newEntry.eTA);
+    addTextToDiv(modalPara, "Full Name: ", newEntry.eFullName);
+    addTextToDiv(modalPara, "Time Entered: ", newEntry.eTime);
     let img = document.createElement("img");
     
     // set attributes
@@ -177,10 +178,11 @@ function entryToText(newEntry, unchecked, redBorder){
     divModal.setAttribute("class","modal");
     divModalContent.setAttribute("class","modal-content");
     spanModalClose.setAttribute("class","close");
-    img.setAttribute("src", "images/x-icon.png");
-    img.setAttribute("height", "10");
-    img.setAttribute("width", "10");
-    img.setAttribute("alt", "x-out-button");
+    img.setAttribute("src", "images/trash.jpg");
+    img.setAttribute("title", "Click to delete entry (permanently)");
+    img.setAttribute("height", "40");
+    img.setAttribute("width", "40");
+    img.setAttribute("alt", "delete-button");
 
     img.onclick = function(){
         confirmAction(url,newEntry.id);
@@ -203,13 +205,36 @@ function entryToText(newEntry, unchecked, redBorder){
 
     // append elements to divAll
     divModalContent.appendChild(spanModalClose);
-    modalPara.appendChild(taText);
-    modalPara.appendChild(modalParaText);
-    modalPara.appendChild(closeButton);
-    modalPara.appendChild(img);
     divModalContent.appendChild(modalPara);
+    divModalContent.appendChild(img);
     divModal.appendChild(divModalContent);
     divAll.appendChild(divModal);
+}
+
+/*
+* Function to add text to a div
+*
+* @param    {html}      div      html div 
+* @param    {string}    prompt   prompt text to add to div
+* @param    {string}    entered  entered text to add to div
+*/
+function addTextToDiv(div, prompt, entered){
+    // create the text html elements
+    let textPara = document.createElement("p");
+    let promptContent = document.createTextNode(prompt);
+    let enteredPara = document.createElement("p");
+    let enteredContent = document.createTextNode(entered);
+
+    // set classes for the entered text (to add color)
+    textPara.setAttribute("class","promptText");
+    enteredPara.setAttribute("class", "enteredText");
+
+    // add the html elements to the div
+    enteredPara.appendChild(enteredContent);
+    textPara.appendChild(promptContent);
+    textPara.appendChild(enteredPara);
+    div.appendChild(document.createElement("br"));
+    div.appendChild(textPara);
 }
 
 /*
@@ -391,7 +416,6 @@ function onLoad(){
     // reload queue constantly
     setInterval(function (){
         if(!paused){
-            console.log("hello");
             requestSessionsGetPublicKey(url, publicKeyText)
         }
     },2000);
@@ -542,6 +566,7 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let TAe = currentEntry["ta"];
                 // create a time for when this entry was made
                 let tempTime = new Date(currentEntry["timestamp"]);
+                tempTime.setTime(tempTime.getTime()-(5*60*60*1000));
                 let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
                 let id = currentEntry["person_id"];
                 let active = currentEntry["active"];
@@ -550,7 +575,6 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 if (currentEntry["active"]===1){
                     numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
-                    console.log(newEntry.eFullName);
                 } else{
                     numPeopleHelped += 1;
                     checkedList.push(newEntry);

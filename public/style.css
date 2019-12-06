@@ -229,3 +229,12 @@ button:hover {
 .numberText{
   color: red;
 }
+
+.promptText{
+  display: inline;
+}
+
+.enteredText{
+  display: inline;
+  color: #005581;
+}
