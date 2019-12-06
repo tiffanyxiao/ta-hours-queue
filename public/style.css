@@ -238,3 +238,7 @@ button:hover {
   display: inline;
   color: #005581;
 }
+
+.trashImg{
+  float: right;
+}

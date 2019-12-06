@@ -15,7 +15,7 @@ let db = new sqlite3.Database('ta_hours_queue.db', sqlite3.OPEN_READWRITE, (err)
         throw err;
     } else {
         console.log('Connected to the database.');
-        db.run('CREATE TABLE queue(person_id INTEGER PRIMARY KEY, first_name varchar(255), last_name varchar(255), active int, session_id int, ta varchar(255), timestamp datetime default current_timestamp)', 
+        db.run('CREATE TABLE queue(person_id INTEGER PRIMARY KEY, first_name varchar(255), last_name varchar(255), active int, session_id int, ta varchar(255), descript varchar(500000), timestamp datetime default current_timestamp)', 
         (err) => {
             if (err) {
                 // Table already created

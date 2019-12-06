@@ -23,15 +23,16 @@ class Entry{
     * @param    {string}    firstName   The first name of the student (of this entry).
     * @param    {string}    lastName    The last name of the student (of this entry).
     * @param    {string}    ta          The ta selected for this entry.
+    * @param    {string}    descript    The description of the issue for the entry.
     * @param    {time}      int         The time this entry was created.
     * @param    {id}        int         id for this entry. Correlates to the rowid of database.
     * @param    {active}    int         Either 0 or 1. 0 for non-active entry, 1 for active entry.
     */
-    constructor(firstName, lastName, ta, time, id, active){
+    constructor(firstName, lastName, ta, descript, time, id, active){
         this.eFirstName = firstName;
         this.eLastName = lastName;
         this.eTA = ta;
-        this.eDescription = "";
+        this.eDescript = descript;
         this.eTime = time;
         this.id = id;
         this.active = active;
@@ -171,6 +172,7 @@ function entryToText(newEntry, unchecked, redBorder){
     addTextToDiv(modalPara, "Requested TA: ", newEntry.eTA);
     addTextToDiv(modalPara, "Full Name: ", newEntry.eFullName);
     addTextToDiv(modalPara, "Time Entered: ", newEntry.eTime);
+    addTextToDiv(modalPara, "Description of Issue: ", newEntry.eDescript);
     let img = document.createElement("img");
     
     // set attributes
@@ -322,9 +324,9 @@ function sessionsToQueue(url, publicKey){
 function sessionToText(newSession){
     // create text elements
     let para = document.createElement("p");
-    let nameText = document.createTextNode(newSession.sSessionName);
+    let nameText = document.createTextNode(newSession.sSessionName+ " in");
     let lineBreak = document.createElement("br");
-    let roomText = document.createTextNode(" "+newSession.sRoom);
+    let roomText = document.createTextNode(" "+newSession.sRoom+" with ");
     let taText = document.createTextNode(newSession.sTAs);
     let queue = document.getElementById('sessionEntries');
     let xText = document.createTextNode("  ");
@@ -332,9 +334,10 @@ function sessionToText(newSession){
 
     // set attributes if needed
     para.setAttribute("class","queueEntry");
-    img.setAttribute("src", "images/x-icon.png");
-    img.setAttribute("height", "10");
-    img.setAttribute("width", "10");
+    img.setAttribute("src", "images/trash.jpg");
+    img.setAttribute("class","trashImg");
+    img.setAttribute("height", "15");
+    img.setAttribute("width", "15");
     img.setAttribute("alt", "x-out-button");
 
     // set onclick function for deleting the entry (call confirmAction)
@@ -350,9 +353,7 @@ function sessionToText(newSession){
 
     // append elements to paragraph element (to add to queue box) 
     para.appendChild(nameText);
-    para.appendChild(lineBreak);
     para.appendChild(roomText);
-    para.appendChild(lineBreak);
     para.appendChild(taText);
     para.appendChild(img);
     queue.appendChild(para);
@@ -367,8 +368,12 @@ function createEntry(){
     let firstNameE = document.getElementById("firstName").value;
     let lastNameE = document.getElementById("lastName").value;
     let TAe = document.getElementById("TAdropdown").value;
+    let descriptE = document.getElementById("descript").value;
+    if (descriptE == null || descriptE == ""){
+        descriptE = "No issue entered.";
+    }
     // create an entry object instance
-    let newEntry = new Entry(firstNameE, lastNameE, TAe);
+    let newEntry = new Entry(firstNameE, lastNameE, TAe, descriptE);
     return newEntry;
 }
 
@@ -379,7 +384,7 @@ function createEntry(){
 function formSubmit(){
     let sampleEntry = createEntry();
     let publicKeyText = localStorage.getItem("publicKey");
-    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA);
+    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA, sampleEntry.eDescript);
     requestSessionsGetPublicKey(url, publicKeyText);
 }
 
@@ -474,6 +479,32 @@ function onLoadSessions(){
     setInterval(function (){
         requestSessionsGetActive(url)
     },2000);
+
+    // Get the modal
+    var modal = document.getElementById("sessionCreateModal");
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("sessionCreateBtn");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks the button, open the modal 
+    btn.onclick = function() {
+        modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+    }
 }
 
 /* 
@@ -568,10 +599,11 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let tempTime = new Date(currentEntry["timestamp"]);
                 tempTime.setTime(tempTime.getTime()-(5*60*60*1000));
                 let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
+                let descript = currentEntry["descript"];
                 let id = currentEntry["person_id"];
                 let active = currentEntry["active"];
                 // create an entry object instance
-                let newEntry = new Entry(firstNameE, lastNameE, TAe, time, id, active);
+                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, time, id, active);
                 if (currentEntry["active"]===1){
                     numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
@@ -756,8 +788,9 @@ function requestQueuePatchId(theUrl, rowId, active){
 * @param    {int}       time        time for the entry (numeric numbers only)
 * @param    {int}       session_id  id for the session    
 * @param    {string}    ta          name of TA selected for this entry  
+* @param    {string}    descript    description of issue for this entry 
 */
-function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta){
+function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript){
     let response;
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -765,7 +798,7 @@ function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta){
             response = xmlHttp.responseText;
         }
     }
-    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta;
+    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta+"&descript="+descript;
     xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
     xmlHttp.send();
     return response;
@@ -1015,12 +1048,13 @@ function requestSessionsGetPublicKey(theUrl, publicKey){
 * @param    {string}        firstName   first name for the entry
 * @param    {string}        lastName    last name for the entry
 * @param    {string}        ta          ta selected for this entry
+* @param    {string}        descript    description of issue for this entry
 */
-function getPostSessionId(response, theUrl, firstName, lastName, ta){
+function getPostSessionId(response, theUrl, firstName, lastName, ta, descript){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"][0];
-        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta);
+        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript);
     }
 }
 
@@ -1033,12 +1067,13 @@ function getPostSessionId(response, theUrl, firstName, lastName, ta){
 * @param    {string}        lastName    last name for the entry
 * @param    {string}        publicKey   public key for the entry
 * @param    {string}        ta          ta selected for this entry
+* @param    {string}        descript    description of issue for this entry
 */
-function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta){
+function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta, descript){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta);
+            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta, descript);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);

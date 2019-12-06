@@ -235,6 +235,9 @@ app.post("/api/queue/", (req, res, next) => {
     if (!req.query.ta){
         errors.push("No ta specified");
     }
+    if (!req.query.descript){
+        errors.push("No descript specified");
+    }
     if (errors.length){
         console.log(req);
         res.status(400).json({"error":errors.join(",")});
@@ -245,10 +248,11 @@ app.post("/api/queue/", (req, res, next) => {
         last_name: req.query.last_name,
         active: 1,
         session_id: req.query.session_id,
-        ta: req.query.ta
+        ta: req.query.ta,
+        descript: req.query.descript
     }
-    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta) VALUES (?, ?, ?, ?, ?)'
-    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta];
+    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta, descript) VALUES (?, ?, ?, ?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta, data.descript];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})

@@ -29,9 +29,15 @@
     <center>
     <div id="top">
       <h1> Welcome to TA Hours!</h1>
-      <!--- Form --->
-      Generate public key and private key
-        <div id="form">
+
+      <!-- The Modal -->
+      <div id="sessionCreateModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="session-create-modal-content">
+          <span class="close">&times;</span>
+          Create a Session
+          <div id="form">
             Session Name (Course and Date):<br>
             <input type="text" id="sessionName" name="sessionname" value="CSC 111 11/03/2019">
             Room:<br>
@@ -54,7 +60,10 @@
             <input type="number" id="maxTime" name="maxtime" value="10">
             <br>
             <button onclick="generateKeys()" style ="width:20%" >Generate</button>
+          </div>
         </div>
+
+      </div>
     </div>
     <br>
     <br>
@@ -63,9 +72,11 @@
         <!--- Session Entries --->
         <div id="sessionEntriesBox">
           <h1> Available TA Sessions: </h1>
+           <!-- Trigger/Open The Modal -->
           <div id="sessionEntries">
 
           </div>
+          <button style="width: 30%; margin-top: 0px; margin-bottom: 0px" id="sessionCreateBtn">Open Create Session Form</button>
         </div>
         <!--- Key Bank Box--->
         <div id="keyBank">
