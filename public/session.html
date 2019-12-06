@@ -9,27 +9,27 @@
     <!--- Navbar --->
     <div>
       <div style = "float: left">
-        <h1> TA Hours Queue </h1>
+        <h1 style="color:#72CDF4"> TA Hours Queue </h1>
       </div>
       <div>
         <ul>
           <li><a href="index.html"> Home </a></li>
           <li><a href="session.html"> Session </a></li>
-          <li><a href="#help"> Help </a></li>
-          <li><a href="#Contact"> Contact </a></li>
+          <li><a href="howto.html"> How To </a></li>
+          <li><a href="about.html"> About </a></li>
+          <li><a href="contact.html"> Contact </a></li>
         </ul>
       </div>
     </div> 
     <!--- Body --->
     <br>
-    <br> 
     <br>
     <br>
     <br>
     <center>
     <div id="top">
       <h2 id="sessionLoadedHeading" style="color:red; display: none;"> No Session Loaded </h2>
-      <h1> Session #1: Ford 242</h1>
+      <h1 id="sessionNumber"> Session #: </h1>
       <button style="width: 40%" id="taOptions">Open TA Options</button>
 
       <!-- The Modal -->
@@ -38,7 +38,7 @@
         <!-- Modal content -->
         <div class="modal-content">
           <span class="close">&times;</span>
-          <p>Some text in the Modal..</p>
+          <button onclick="archiveQueue()" style="width:40%">Clear Queue</button>
         </div>
       
       </div>
@@ -61,7 +61,6 @@
           <textarea id="descript" name="descript" style="width:95%; height:100px;" maxlength="500000" placeholder="Describe your issue here."></textarea>
           <br><br>
           <button onclick="formSubmit()">Submit</button>
-          <button onclick="archiveQueue()">Clear Queue</button>
         </div>
       </div>
     </div>

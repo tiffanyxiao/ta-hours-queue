@@ -976,6 +976,10 @@ function callbackRequestSessionsGetPublicKey(response){
         localStorage.setItem("minTime",response["data"][5]);
         localStorage.setItem("maxTime",response["data"][6]);
         localStorage.setItem("TAs",response["data"][7]);
+        localStorage.setItem("sessionName", response["data"][8]);
+        
+        // add session heading 
+        document.getElementById("sessionNumber").innerHTML = "Session Public Key #"+localStorage.getItem("publicKey")+": "+localStorage.getItem("sessionName");
 
         let nameOfKey = "endtime" + response["data"][3];
         if(!localStorage.getItem(nameOfKey)){

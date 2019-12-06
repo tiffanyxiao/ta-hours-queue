@@ -169,7 +169,7 @@ app.get("/api/sessions", (req, res, next) => {
             return;
         }
         if (rows){
-            response = [rows["session_id"],rows["starttime"],rows["endtime"],rows["public_key"],rows["rec_min"], rows["min_min"], rows["max_min"], rows["tas"]];
+            response = [rows["session_id"],rows["starttime"],rows["endtime"],rows["public_key"],rows["rec_min"], rows["min_min"], rows["max_min"], rows["tas"], rows["session_name"]];
         }
         res.json({
             "message": "success",
