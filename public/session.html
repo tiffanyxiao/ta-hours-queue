@@ -49,16 +49,19 @@
         <!--- Form --->
         <div id="form">
           First name:<br>
-          <input type="text" id="firstName" name="firstname" value="Mickey">
+          <input type="text" id="firstName" name="firstname" value="Mickey" placeholder="First Name Here">
           <br>
           Last name:<br>
-          <input type="text" id="lastName" name="lastname" value="Mouse">
+          <input type="text" id="lastName" name="lastname" value="Mouse" placeholder="Last Name Here">
+          <br>
+          Password:
+          <input type="text" id="password" name="password" value="HelloWorld123" placeholder="Password Here">
           <br>
           <select id="TAdropdown" name="TA">
             <option value="Any">Any</option>
           </select>
           <br>
-          <textarea id="descript" name="descript" style="width:95%; height:100px;" maxlength="500000" placeholder="Describe your issue here."></textarea>
+          <textarea id="descript" name="descript" maxlength="500000" placeholder="Describe your issue here."></textarea>
           <br><br>
           <button onclick="formSubmit()">Submit</button>
         </div>

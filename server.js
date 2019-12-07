@@ -238,6 +238,9 @@ app.post("/api/queue/", (req, res, next) => {
     if (!req.query.descript){
         errors.push("No descript specified");
     }
+    if (!req.query.password){
+        errors.push("No descript specified");
+    }
     if (errors.length){
         console.log(req);
         res.status(400).json({"error":errors.join(",")});
@@ -249,10 +252,11 @@ app.post("/api/queue/", (req, res, next) => {
         active: 1,
         session_id: req.query.session_id,
         ta: req.query.ta,
-        descript: req.query.descript
+        descript: req.query.descript,
+        password: req.query.password
     }
-    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta, descript) VALUES (?, ?, ?, ?, ?, ?)'
-    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta, data.descript];
+    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta, descript, password) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta, data.descript, data.password];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})

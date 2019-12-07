@@ -24,15 +24,17 @@ class Entry{
     * @param    {string}    lastName    The last name of the student (of this entry).
     * @param    {string}    ta          The ta selected for this entry.
     * @param    {string}    descript    The description of the issue for the entry.
+    * @param    {string}    password    The password for this entry.
     * @param    {time}      int         The time this entry was created.
     * @param    {id}        int         id for this entry. Correlates to the rowid of database.
     * @param    {active}    int         Either 0 or 1. 0 for non-active entry, 1 for active entry.
     */
-    constructor(firstName, lastName, ta, descript, time, id, active){
+    constructor(firstName, lastName, ta, descript, password, time, id, active){
         this.eFirstName = firstName;
         this.eLastName = lastName;
         this.eTA = ta;
         this.eDescript = descript;
+        this.ePassword = password;
         this.eTime = time;
         this.id = id;
         this.active = active;
@@ -86,11 +88,12 @@ function clearHtml(divId){
 * Function to ask user to confirm delete action. Then, calls delete API call to delete
 * entry from queue table.
 * 
-* @param    {string}    url     url of the hosted server
-* @param    {string}    id      id of entry to delete 
+* @param    {string}    url                 url of the hosted server
+* @param    {string}    newEntryId          id of entry to delete 
+* @param    {string}    newEntryPassword    password of the entry
 * 
 */ 
-function confirmAction(url,newEntryId){
+function confirmAction(url, newEntryId, newEntryPassword){
     // check if the dictionaries are empty, if they are then the user will manually enter key
     let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
@@ -102,8 +105,20 @@ function confirmAction(url,newEntryId){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKeyText];
         requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, enteredPrivateKey, "entered");
     } else {
-        let userEnteredKey = prompt('Enter private key to delete this entry.');
-        requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, userEnteredKey, "manual");
+        let passwordSet = confirm("Try user entered password? (\"Ok\" to enter password, \"Cancel\" to enter private key");
+        if (passwordSet == true){
+            console.log("hello");
+            // check if entered password matches entry password 
+            let enteredPassword = prompt('Enter password to delete this entry.');
+            if (newEntryPassword == enteredPassword){
+                requestQueueDeleteEntry(url,newEntryId);
+            } else {
+                alert("Wrong password.")
+            }
+        } else {
+            let userEnteredKey = prompt('Enter private key to delete this entry.');
+            requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, userEnteredKey, "manual");    
+        }
     }
 }
 
@@ -187,7 +202,7 @@ function entryToText(newEntry, unchecked, redBorder){
     img.setAttribute("alt", "delete-button");
 
     img.onclick = function(){
-        confirmAction(url,newEntry.id);
+        confirmAction(url,newEntry.id, newEntry.ePassword);
     }
 
     // set onclick function for check
@@ -369,12 +384,21 @@ function createEntry(){
     let lastNameE = document.getElementById("lastName").value;
     let TAe = document.getElementById("TAdropdown").value;
     let descriptE = document.getElementById("descript").value;
-    if (descriptE == null || descriptE == ""){
-        descriptE = "No issue entered.";
+    let passwordE = document.getElementById("password").value;
+    if (passwordE.includes("#")){
+        alert("Please enter a password with no '#'s.");
+        return null;
+    } else { 
+        if (descriptE == null || descriptE == ""){
+            descriptE = "No issue entered.";
+        }
+        if (passwordE == null || passwordE == ""){
+            passwordE = "#####";
+        }
+        // create an entry object instance
+        let newEntry = new Entry(firstNameE, lastNameE, TAe, descriptE, passwordE);
+        return newEntry;
     }
-    // create an entry object instance
-    let newEntry = new Entry(firstNameE, lastNameE, TAe, descriptE);
-    return newEntry;
 }
 
 /*
@@ -383,9 +407,11 @@ function createEntry(){
 */ 
 function formSubmit(){
     let sampleEntry = createEntry();
-    let publicKeyText = localStorage.getItem("publicKey");
-    requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA, sampleEntry.eDescript);
-    requestSessionsGetPublicKey(url, publicKeyText);
+    if (sampleEntry != null){
+        let publicKeyText = localStorage.getItem("publicKey");
+        requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA, sampleEntry.eDescript, sampleEntry.ePassword);
+        requestSessionsGetPublicKey(url, publicKeyText);
+    }
 }
 
 /* 
@@ -595,6 +621,7 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let firstNameE = currentEntry["first_name"];
                 let lastNameE = currentEntry["last_name"];
                 let TAe = currentEntry["ta"];
+                let passwordE = currentEntry["password"];
                 // create a time for when this entry was made
                 let tempTime = new Date(currentEntry["timestamp"]);
                 tempTime.setTime(tempTime.getTime()-(5*60*60*1000));
@@ -603,7 +630,7 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let id = currentEntry["person_id"];
                 let active = currentEntry["active"];
                 // create an entry object instance
-                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, time, id, active);
+                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, passwordE, time, id, active);
                 if (currentEntry["active"]===1){
                     numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
@@ -789,8 +816,9 @@ function requestQueuePatchId(theUrl, rowId, active){
 * @param    {int}       session_id  id for the session    
 * @param    {string}    ta          name of TA selected for this entry  
 * @param    {string}    descript    description of issue for this entry 
+* @param    {string}        password    password for this entry
 */
-function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript){
+function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript, password){
     let response;
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -798,7 +826,7 @@ function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, desc
             response = xmlHttp.responseText;
         }
     }
-    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta+"&descript="+descript;
+    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta+"&descript="+descript+"&password="+password;
     xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
     xmlHttp.send();
     return response;
@@ -1053,12 +1081,13 @@ function requestSessionsGetPublicKey(theUrl, publicKey){
 * @param    {string}        lastName    last name for the entry
 * @param    {string}        ta          ta selected for this entry
 * @param    {string}        descript    description of issue for this entry
+* @param    {string}        password    password for this entry
 */
-function getPostSessionId(response, theUrl, firstName, lastName, ta, descript){
+function getPostSessionId(response, theUrl, firstName, lastName, ta, descript, password){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"][0];
-        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript);
+        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript, password);
     }
 }
 
@@ -1072,12 +1101,13 @@ function getPostSessionId(response, theUrl, firstName, lastName, ta, descript){
 * @param    {string}        publicKey   public key for the entry
 * @param    {string}        ta          ta selected for this entry
 * @param    {string}        descript    description of issue for this entry
+* @param    {string}        password    password for this entry
 */
-function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta, descript){
+function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta, descript, password){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta, descript);
+            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta, descript, password);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);
@@ -1105,7 +1135,7 @@ function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId, publicK
     } else if (!("data" in response) && (keyType == "entered")){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuth(url, newEntryId, publicKey, userEnteredKey, "manual");
-    } else{
+    } else {
         alert("Wrong private key.");
     }
 }
