@@ -29,12 +29,13 @@ class Entry{
     * @param    {id}        int         id for this entry. Correlates to the rowid of database.
     * @param    {active}    int         Either 0 or 1. 0 for non-active entry, 1 for active entry.
     */
-    constructor(firstName, lastName, ta, descript, password, time, id, active){
+    constructor(firstName, lastName, ta, descript, password, completed, time, id, active){
         this.eFirstName = firstName;
         this.eLastName = lastName;
         this.eTA = ta;
         this.eDescript = descript;
         this.ePassword = password;
+        this.eCompleted = completed;
         this.eTime = time;
         this.id = id;
         this.active = active;
@@ -263,8 +264,10 @@ function checkedEntry(id){
     let checkBox = document.getElementById("checkbox"+id);
     if (checkBox.checked){
         requestQueuePatchId(url, id, 2);
+        requestQueuePatchComplete(url, id, 2);
     } else {
         requestQueuePatchId(url, id, 1);
+        requestQueuePatchComplete(url, id, 1);
     }
     // api call to update queue entry number
 }
@@ -396,7 +399,7 @@ function createEntry(){
             passwordE = "#####";
         }
         // create an entry object instance
-        let newEntry = new Entry(firstNameE, lastNameE, TAe, descriptE, passwordE);
+        let newEntry = new Entry(firstNameE, lastNameE, TAe, descriptE, passwordE, 1);
         return newEntry;
     }
 }
@@ -409,7 +412,7 @@ function formSubmit(){
     let sampleEntry = createEntry();
     if (sampleEntry != null){
         let publicKeyText = localStorage.getItem("publicKey");
-        requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA, sampleEntry.eDescript, sampleEntry.ePassword);
+        requestSessionsGetToPostEntry(url,sampleEntry.eFirstName,sampleEntry.eLastName, publicKeyText, sampleEntry.eTA, sampleEntry.eDescript, sampleEntry.ePassword, sampleEntry.eCompleted);
         requestSessionsGetPublicKey(url, publicKeyText);
     }
 }
@@ -622,6 +625,7 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let lastNameE = currentEntry["last_name"];
                 let TAe = currentEntry["ta"];
                 let passwordE = currentEntry["password"];
+                let completedE = currentEntry["completed"];
                 // create a time for when this entry was made
                 let tempTime = new Date(currentEntry["timestamp"]);
                 tempTime.setTime(tempTime.getTime()-(5*60*60*1000));
@@ -630,7 +634,7 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let id = currentEntry["person_id"];
                 let active = currentEntry["active"];
                 // create an entry object instance
-                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, passwordE, time, id, active);
+                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, passwordE, completedE, time, id, active);
                 if (currentEntry["active"]===1){
                     numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
@@ -788,7 +792,7 @@ function requestQueueGetId(theUrl){
 }
 
 /* 
-* Request to update all entries entered to active=0. 
+* Request to update all entries entered to active value 
 *
 * @param    {string}    theUrl      url for the host server
 * @params   {int}       rowId       id of the entry
@@ -806,6 +810,24 @@ function requestQueuePatchId(theUrl, rowId, active){
     xmlHttp.send();
 }
 
+/* 
+* Request to update all entries entered to completed value
+*
+* @param    {string}    theUrl      url for the host server
+* @params   {int}       rowId       id of the entry
+* @params   {int}       complete    complete value of the entry to update to
+*/
+function requestQueuePatchComplete(theUrl, rowId, completed){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200){
+            response = xmlHttp.responseText;
+        }
+    }
+    xmlHttp.open("PATCH", theUrl+"api/queue/update/c?rowId="+rowId+"&completed="+completed, true); // true for asynchronous 
+    xmlHttp.send();
+}
+
 /*
 * Request to post to queue table (post an entry). 
 *
@@ -816,9 +838,10 @@ function requestQueuePatchId(theUrl, rowId, active){
 * @param    {int}       session_id  id for the session    
 * @param    {string}    ta          name of TA selected for this entry  
 * @param    {string}    descript    description of issue for this entry 
-* @param    {string}        password    password for this entry
+* @param    {string}    password    password for this entry
+* @param    {string}    completed   completed value for this entry
 */
-function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript, password){
+function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript, password, completed){
     let response;
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
@@ -826,7 +849,7 @@ function requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, desc
             response = xmlHttp.responseText;
         }
     }
-    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta+"&descript="+descript+"&password="+password;
+    params = "first_name="+firstName+"&last_name="+lastName+"&session_id="+session_id+"&ta="+ta+"&descript="+descript+"&password="+password+"&completed="+completed;
     xmlHttp.open("POST", theUrl+"api/queue?"+params, true); // true for asynchronous 
     xmlHttp.send();
     return response;
@@ -1082,12 +1105,13 @@ function requestSessionsGetPublicKey(theUrl, publicKey){
 * @param    {string}        ta          ta selected for this entry
 * @param    {string}        descript    description of issue for this entry
 * @param    {string}        password    password for this entry
+* @param    {string}        completed   completed value for this entry
 */
-function getPostSessionId(response, theUrl, firstName, lastName, ta, descript, password){
+function getPostSessionId(response, theUrl, firstName, lastName, ta, descript, password, completed){
     response = JSON.parse(response);
     if ("data" in response){
         session_id = response["data"][0];
-        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript, password);
+        requestQueuePostEntry(theUrl, firstName, lastName, session_id, ta, descript, password, completed);
     }
 }
 
@@ -1102,12 +1126,13 @@ function getPostSessionId(response, theUrl, firstName, lastName, ta, descript, p
 * @param    {string}        ta          ta selected for this entry
 * @param    {string}        descript    description of issue for this entry
 * @param    {string}        password    password for this entry
+* @param    {string}        completed   completed value for this entry
 */
-function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta, descript, password){
+function requestSessionsGetToPostEntry(theUrl, firstName, lastName, publicKey, ta, descript, password, completed){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta, descript, password);
+            getPostSessionId(xmlHttp.responseText, theUrl, firstName, lastName, ta, descript, password, completed);
     }
     xmlHttp.open("GET", theUrl+"api/sessions/?public_key="+publicKey, true); // true for asynchronous 
     xmlHttp.send(null);

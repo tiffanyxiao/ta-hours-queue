@@ -239,7 +239,10 @@ app.post("/api/queue/", (req, res, next) => {
         errors.push("No descript specified");
     }
     if (!req.query.password){
-        errors.push("No descript specified");
+        errors.push("No password specified");
+    }
+    if (!req.query.completed){
+        errors.push("No completed value specified");
     }
     if (errors.length){
         console.log(req);
@@ -253,10 +256,11 @@ app.post("/api/queue/", (req, res, next) => {
         session_id: req.query.session_id,
         ta: req.query.ta,
         descript: req.query.descript,
-        password: req.query.password
+        password: req.query.password, 
+        completed: req.query.completed
     }
-    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta, descript, password) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta, data.descript, data.password];
+    let sql ='INSERT INTO queue(first_name, last_name, active, session_id, ta, descript, password, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    let params =[data.first_name, data.last_name, data.active, data.session_id, data.ta, data.descript, data.password, data.completed];
     db.run(sql, params, function (err, result) {
         if (err){
             res.status(400).json({"error": err.message})
@@ -270,7 +274,7 @@ app.post("/api/queue/", (req, res, next) => {
     });
 })
 
-// endpoint to update an entry with 0 active status in queue table
+// endpoint to update an entry with an active status in queue table
 app.patch("/api/queue/update", (req, res, next) => {
     let data = {
         rowid: req.query.rowId,
@@ -281,6 +285,29 @@ app.patch("/api/queue/update", (req, res, next) => {
            active = ? 
            WHERE rowid = ?`,
         [data.active, data.rowid],
+        function (err, result) {
+            if (err){
+                res.status(400).json({"error": res.message})
+                return;
+            }
+            res.json({
+                message: "success",
+                changes: this.changes
+            })
+    });
+})
+
+// endpoint to update an entry with a completed status in queue table
+app.patch("/api/queue/update/c", (req, res, next) => {
+    let data = {
+        rowid: req.query.rowId,
+        completed: req.query.completed
+    }
+    db.run(
+        `UPDATE queue set 
+           completed = ? 
+           WHERE rowid = ?`,
+        [data.completed, data.rowid],
         function (err, result) {
             if (err){
                 res.status(400).json({"error": res.message})
