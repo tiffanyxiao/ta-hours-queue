@@ -25,11 +25,12 @@ class Entry{
     * @param    {string}    ta          The ta selected for this entry.
     * @param    {string}    descript    The description of the issue for the entry.
     * @param    {string}    password    The password for this entry.
-    * @param    {time}      int         The time this entry was created.
-    * @param    {id}        int         id for this entry. Correlates to the rowid of database.
-    * @param    {active}    int         Either 0 or 1. 0 for non-active entry, 1 for active entry.
+    * @param    {string}    time        The time this entry was created.
+    * @param    {int}       id         id for this entry. Correlates to the rowid of database.
+    * @param    {int}       active      Either 0 or 1. 0 for non-active entry, 1 for active entry.
+    * @param    {int}       session     Session number of this entry.
     */
-    constructor(firstName, lastName, ta, descript, password, completed, time, id, active){
+    constructor(firstName, lastName, ta, descript, password, completed, time, id, active, session){
         this.eFirstName = firstName;
         this.eLastName = lastName;
         this.eTA = ta;
@@ -39,6 +40,7 @@ class Entry{
         this.eTime = time;
         this.id = id;
         this.active = active;
+        this.session = session;
         this.eFullName = this.eFirstName+" "+this.eLastName;
     }
     
@@ -203,12 +205,12 @@ function entryToText(newEntry, unchecked, redBorder){
     img.setAttribute("alt", "delete-button");
 
     img.onclick = function(){
-        confirmAction(url,newEntry.id, newEntry.ePassword);
+        confirmAction(url, newEntry.id, newEntry.ePassword);
     }
 
     // set onclick function for check
     input.onclick = function(){
-        checkedEntry(newEntry.id);
+        confirmCheck(url, newEntry.id);
     }
 
     divText.onclick = function(){
@@ -270,6 +272,31 @@ function checkedEntry(id){
         requestQueuePatchComplete(url, id, 1);
     }
     // api call to update queue entry number
+}
+
+/*
+* Function to ask user to confirm check action. Then, calls check API call to check off 
+* (or uncheck) entry from queue table.
+* 
+* @param    {string}    url                 url of the hosted server
+* @param    {string}    newEntryId          id of entry to delete 
+* 
+*/ 
+function confirmCheck(url, newEntryId){
+    // check if the dictionaries are empty, if they are then the user will manually enter key
+    let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    let publicKeyText = localStorage.getItem("publicKey");
+    if (generatedKeysPairingsDict){
+        let generatedPrivateKey = generatedKeysPairingsDict[publicKeyText];
+        requestSessionsGetKeyAuthCheck(url, newEntryId, publicKeyText, generatedPrivateKey, "generated");
+    } else if (enteredKeysPairingsDict){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKeyText];
+        requestSessionsGetKeyAuthCheck(url, newEntryId, publicKeyText, enteredPrivateKey, "entered");
+    } else {
+        let userEnteredKey = prompt('Enter private key to check/uncheck this entry.');
+        requestSessionsGetKeyAuthCheck(url, newEntryId, publicKeyText, userEnteredKey, "manual");    
+    }
 }
 
 /*
@@ -632,9 +659,11 @@ function callbackRequestQueueGetEntries(response, session_id, timer){
                 let time = tempTime.getHours().toString()+":"+tempTime.getMinutes().toString()+":"+tempTime.getSeconds().toString();
                 let descript = currentEntry["descript"];
                 let id = currentEntry["person_id"];
+                let session = currentEntry["session_id"] 
                 let active = currentEntry["active"];
                 // create an entry object instance
-                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, passwordE, completedE, time, id, active);
+                let newEntry = new Entry(firstNameE, lastNameE, TAe, descript, passwordE, completedE, time, id, active, session);
+                console.log(newEntry.session);
                 if (currentEntry["active"]===1){
                     numPeopleLeft += 1;
                     uncheckedList.push(newEntry);
@@ -717,7 +746,7 @@ function requestQueueGetEntries(theUrl, session_id, timer){
 
 
 /*
-* Callback function for requestSessionsGetKeyAuth. Deletes the item if the response
+* Callback function for requestSessionsGetKeyAuthClearQueue. Clears the queue if response
 * indicates that there is a match for the public and private key.
 *
 * @param    {string}        theUrl      url for the host server
@@ -730,7 +759,7 @@ function callbackRequestSessionsGetKeyAuthClearQueue(theUrl, response, publicKey
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     response = JSON.parse(response);
     if ("data" in response){
-        requestQueueGetId(theUrl);
+        requestQueueGetId(theUrl, response["data"]["session_id"]);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthClearQueue(url, publicKey, enteredPrivateKey, "entered");
@@ -743,7 +772,7 @@ function callbackRequestSessionsGetKeyAuthClearQueue(theUrl, response, publicKey
 }
 
 /*
-* Request to check if keys match in the sessions table, to delete the entry.
+* Request to check if keys match in the sessions table, to clear the queue.
 *
 * @param    {string}    theUrl      url for the host server
 * @param    {int}       newEntryId  id of the entry to be deleted
@@ -765,12 +794,15 @@ function requestSessionsGetKeyAuthClearQueue(theUrl, publicKey, privateKey, keyT
 * Callback function to update all entries' active value in the queue. Uses patch call.
 *
 * @param    {JSON string}    response    response from API call
+* @param    {int}            sessionId   sessionId of session to clear
 */
-function callbackRequestQueueGetId(response){
+function callbackRequestQueueGetId(response, sessionId){
     response = JSON.parse(response);
     for (entry in response["data"]){
-        currentEntry = response["data"][entry];
-        requestQueuePatchId(url,currentEntry["person_id"], 0);
+        if (response["data"][entry]["session_id"] == sessionId){
+            currentEntry = response["data"][entry];
+            requestQueuePatchId(url,currentEntry["person_id"], 0);
+        }
     }
 }
 
@@ -779,12 +811,13 @@ function callbackRequestQueueGetId(response){
 * values to 0)
 *
 * @param    {string}    theUrl      url for the host server
+* @param    {int}       sessionId   sessionId of session to clear
 */
-function requestQueueGetId(theUrl){
+function requestQueueGetId(theUrl, sessionId){
     let xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() { 
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            callbackRequestQueueGetId(xmlHttp.responseText);
+            callbackRequestQueueGetId(xmlHttp.responseText, sessionId);
             window.location.reload();
     }
     xmlHttp.open("GET", theUrl+"api/queue", true); // true for asynchronous 
@@ -1185,6 +1218,52 @@ function requestSessionsGetKeyAuth(theUrl, newEntryId, publicKey, privateKey, ke
 }
 
 /*
+* Callback function for requestSessionsGetKeyAuth. Check/uncheck the item if the response
+* indicates that there is a match for the public and private key.
+*
+* @param    {string}        theUrl      url for the host server
+* @param    {JSON string}   response    response from api
+* @param    {int}           newEntryId  id of the entry to be delete
+* @param    {string}        publicKey   the public key
+* @param    {string}        keyType     generated, entered or manual to indicate which key type its checking
+*/
+function callbackRequestSessionsGetKeyAuthCheck(theUrl, response, newEntryId, publicKey, keyType){
+    let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
+    response = JSON.parse(response);
+    if ("data" in response){
+        // check/uncheck the item
+        checkedEntry(newEntryId);
+    } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
+        let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
+        requestSessionsGetKeyAuthCheck(url, newEntryId, publicKey, enteredPrivateKey, "entered");
+    } else if (!("data" in response) && (keyType == "entered")){
+        let userEnteredKey = prompt('Enter private key to delete this entry.');
+        requestSessionsGetKeyAuthCheck(url, newEntryId, publicKey, userEnteredKey, "manual");
+    } else {
+        alert("Wrong private key.");
+    }
+}
+
+/*
+* Request to check if keys match in the sessions table, to check/uncheck the entry.
+*
+* @param    {string}    theUrl      url for the host server
+* @param    {int}       newEntryId  id of the entry to be deleted
+* @param    {string}    privateKey  the private key 
+* @param    {string}    publicKey   the public key
+* @param    {string}    keyType     generated, entered or manual to indicate which key type its checking
+*/
+function requestSessionsGetKeyAuthCheck(theUrl, newEntryId, publicKey, privateKey, keyType){
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        callbackRequestSessionsGetKeyAuthCheck(theUrl, xmlHttp.responseText, newEntryId, publicKey, keyType);
+    }
+    xmlHttp.open("GET", theUrl+"api/sessions/auth/?public_key="+publicKey+"&private_key="+privateKey, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
+
+/*
 * Request to update session to active or inactive
 *
 * @param    {string}    theUrl      url for the host server
@@ -1255,6 +1334,7 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
         localStorage.removeItem("publicKey");
         localStorage.removeItem("TAs");
         requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0, 0, 0, 0);
+        requestQueueGetId(theUrl, response["data"]["session_id"]);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");
