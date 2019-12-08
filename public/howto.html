@@ -26,24 +26,54 @@
     <br> 
     <br>
     <br>
-    <center><h1>How To</h1></center>
-    <h2>For General Students</h2>
-    <h3>How Do I Enter a TA Session?</h3>
-    <h3>How Do I Add My Name to the Queue?</h3>
-    <h2>For Teaching Assistants (TAs)</h2>
-    <h3>How Do I Enter a TA Session?</h3>
-    <h3>How Do I Create a TA Session?</h3>
-    <h3>How Do I Delete a TA Session?</h3>
-    <h3>How Do I Add a Student To the Queue?</h3>
-    <h3>How Do I Delete a Student From the Queue?</h3>
-    <h3>How Do I Mark a Student as Helped?</h3>
-    <h3>How Do I View Information About a Queue Entry?</h3>
-    <h3>How Do I Archive a Queue?</h3>
-    <h2>For All Other Questions ...</h2>
-    View the source code on GitHub here: <a href="https://github.com/tiffanyxiao/ta-hours-queue">https://github.com/tiffanyxiao/ta-hours-queue</a>
-    <br>
-    If you need further assistance, please contact the creator Tiffany Xiao (see Contact page)
-
+    <div class="howto" style="margin-left:20px; margin-right:20px">
+        <center><h1>How To</h1></center>
+        <h2> Key Concepts of this Application: </h2>
+        <h3> Sessions </h3>
+        Each "session" represents a TA session where students are meeting with TAs for a specific course. On this application, sessions can be created and will populate on the home page. Students will enter sessions, and then add their names to the queue within the session. 
+        <h3> Entries </h3>
+        Each "entry" represents a name on the queue for a session. 
+        <h3> Public Key and Private Key</h3>
+        Each session has a public key and private key associated with it. Students need the public key to access the session and do general tasks that all students can do. TAs need the private key to delete entries, check off entires and archive the entire queue. Only the person who generated the session will be given the public and private key, and this person will need to share this information with the other students and TAs. 
+        <h2>For General Students</h2>
+        <h3>How Do I Enter a TA Session?</h3>
+        In order to enter a TA session, you will need to have the public key for the session. You can either enter a public key into your key bank (at the bottom of the home page), or click on the session you want to enter and answer the prompt that asks for your public key. 
+        <h3>How Do I Add My Name to the Queue?</h3>
+        After entering the session, fill out the form on the left side with your information. Then submit, and ta-dah, you are now added to the queue. 
+        <h3>How Do I Delete My Name from the Queue?</h3>
+        When creating your entry, you can assign a password to your entry. Click on your entry and then click on the trash can - you will then be prompted to delete your entry with either your password or the private key. Select password (by clicking "Ok") and then enter your password. If you've forgotten your password, anyone with the private key can delete your entry.
+        <br>
+        **Please do not enter a password you use for other websites - passwords are saved to the database and the security on this application is very low**  
+        <h2>For Teaching Assistants (TAs)</h2>
+        <h3>How Do I Enter a TA Session?</h3>
+        In order to enter a TA session, you will need to have the public key for the session. You can either enter a public key into your key bank (at the bottom of the home page), or click on the session you want to enter and answer the prompt that asks for your public key. 
+        <h3>How Do I Create a TA Session?</h3>
+        You can click on the button on the home page called "Open Create Session Form" and submit the form with relevant information to create a session. You will then be given a public key and private key via the prompt. Please share these keys with your students and fellow TAs to give them access to the session. 
+        <h3>How Do I Delete a TA Session?</h3>
+        Click the trash icon next to the session information on the home page. You need the private key to delete the session.
+        <h3>How Do I Add a Student To the Queue?</h3>
+        You can add a student to the queue the same way a student would (by filling out the form on the left of the session page).
+        <h3>How Do I Delete a Student From the Queue?</h3>
+        Click on the entry in the queue box (the middle box) and then click on the trash can icon to delete it. You need the private key or their personal password to delete the entry. 
+        <h3>How Do I Mark a Student as Helped?</h3>
+        Check off the entry using the checkbox! Make sure you check off students when you finish working with them before you archive the queue- their checked status is saved to the database, and this can be used for data analysis later on.
+        <h3>How Do I View Information About a Queue Entry?</h3>
+        Click on the entry in the queue box (the middle box of the session page).
+        <h3>How Do I Archive a Queue?</h3>
+        Click on the "Open TA Options" button on the session page and then click "Archive queue". You need the private key to archive the queue.
+        <h2>For All Other Questions ...</h2>
+        View the source code on GitHub here: <a href="https://github.com/tiffanyxiao/ta-hours-queue">https://github.com/tiffanyxiao/ta-hours-queue</a>
+        <br>
+        If you need further assistance, please contact the creator Tiffany Xiao (see <a href="contact.html"> Contact </a> page)    
+    </div>
+    
     <script src="script.js"></script>
   </body>
+  <footer>
+    <center>
+        <p style="font-size:9px; color: gray;">
+            This Application is Created by <a href="https://github.com/tiffanyxiao">Tiffany Xiao</a>
+        </p>
+    </center>
+  </footer>
 </html>

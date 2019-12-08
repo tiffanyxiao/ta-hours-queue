@@ -20,9 +20,7 @@ let db = new sqlite3.Database('ta_hours_queue.db', sqlite3.OPEN_READWRITE, (err)
             if (err) {
                 // Table already created
             }else{  
-                // add some rows
-                // let insert = 'INSERT INTO queue(first_name, last_name, time) VALUES (?,?,?)';
-                // db.run(insert, ["Tiffany","Xiao","11:03"]);
+                // do nothing 
             }
         });  
         db.run('CREATE TABLE sessions(session_id INTEGER PRIMARY KEY, public_key varchar(255), private_key varchar(255), active int, session_name varchar(255), room varchar(255), tas varchar(255), starttime int, endtime int, rec_min int, min_min int, max_min int)', 
