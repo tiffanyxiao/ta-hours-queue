@@ -78,29 +78,40 @@
           <button style="width: 30%; margin-top: 0px; margin-bottom: 0px" id="sessionCreateBtn">Open Create Session Form</button>
         </div>
         <!--- Key Bank Box--->
-        <div id="keyBank">
-          <h1> My Key Bank: </h1>
-          <div id="keyBankEntries">
-            Generated Active Key Pairings:
-            <p id="generatedKeysPara">
-              
-            </p>
-            Entered Active Key Pairings:
-            <p id="enteredKeysPara">
-              
-            </p>
-            <br>
-            Create a Key Pairing
-            <h6> Warning: The list will populate as long as the entered public key is valid. It does not check the private key!</h6>
-            <div id="form">
-              Public Key:<br>
-              <input type="text" id="publicKeyEntered" name="publickeyentered">
-              Private Key (Optional):<br>
-              <input type="text" id="privateKeyEntered" name="privatekeyentered" value="None">
-              <br><br>
-              <button onclick="createKeys()" style ="width:20%" >Enter Keys</button>
+        <button id="keyBtn" style="width: 80%">Open Key Bank</button>
+
+        <!-- The Modal -->
+        <div id="keyModal" class="modal">
+
+          <!-- Modal content -->
+          <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="keyBank">
+              <h1> My Key Bank: </h1>
+              <div id="keyBankEntries">
+                Generated Active Key Pairings:
+                <p id="generatedKeysPara">
+                  
+                </p>
+                Entered Active Key Pairings:
+                <p id="enteredKeysPara">
+                  
+                </p>
+                <br>
+                Create a Key Pairing
+                <h6> Warning: The list will populate as long as the entered public key is valid. It does not check the private key!</h6>
+                <div id="form">
+                  Public Key:<br>
+                  <input type="text" id="publicKeyEntered" name="publickeyentered">
+                  Private Key (Optional):<br>
+                  <input type="text" id="privateKeyEntered" name="privatekeyentered" value="None">
+                  <br><br>
+                  <button onclick="createKeys()" style ="width:20%" >Enter Keys</button>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
