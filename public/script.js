@@ -791,7 +791,7 @@ function callbackRequestSessionsGetKeyAuthClearQueue(theUrl, response, publicKey
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthClearQueue(url, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) && (keyType == "entered")){
+    } else if (!("data" in response) && ((keyType == "entered") || (keyType == "generated"))){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuthClearQueue(url, publicKey, userEnteredKey, "manual");
     } else{
@@ -1218,7 +1218,7 @@ function callbackRequestSessionsGetKeyAuth(theUrl, response, newEntryId, publicK
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuth(url, newEntryId, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) && (keyType == "entered")){
+    } else if (!("data" in response) && ((keyType == "entered") || (keyType == "generated"))){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuth(url, newEntryId, publicKey, userEnteredKey, "manual");
     } else {
@@ -1264,7 +1264,7 @@ function callbackRequestSessionsGetKeyAuthCheck(theUrl, response, newEntryId, pu
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthCheck(url, newEntryId, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) && (keyType == "entered")){
+    } else if (!("data" in response) && ((keyType == "entered") || (keyType == "generated"))){
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuthCheck(url, newEntryId, publicKey, userEnteredKey, "manual");
     } else {
@@ -1355,7 +1355,9 @@ function requestSessionsPatchSession(theUrl, active, sessionName, room, tas, row
 function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, keyType){
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     response = JSON.parse(response);
+    console.log(publicKey);
     if ("data" in response){
+        console.log("yep");
         // delete the session and all the localStorage time variables associated with it 
         localStorage.removeItem("starttime"+publicKey);
         localStorage.removeItem("endtime"+publicKey);
@@ -1364,12 +1366,15 @@ function callbackRequestSessionsGetKeyAuthSessions(theUrl, response, publicKey, 
         requestSessionsPatchSession(theUrl,0,"None", "None", "None", response["data"]["session_id"], 0, 0, 0, 0, 0);
         requestQueueGetId(theUrl, response["data"]["session_id"]);
     } else if (!("data" in response) && (keyType == "generated") && (enteredKeysPairingsDict)){
+        console.log("hi");
         let enteredPrivateKey = enteredKeysPairingsDict[publicKey];
         requestSessionsGetKeyAuthSessions(url, publicKey, enteredPrivateKey, "entered");
-    } else if (!("data" in response) && (keyType == "entered")){
+    } else if (!("data" in response) && ((keyType == "entered") || (keyType == "generated"))){
+        console.log("Hello");
         let userEnteredKey = prompt('Enter private key to delete this entry.');
         requestSessionsGetKeyAuthSessions(url, publicKey, userEnteredKey, "manual");
     } else{
+        console.log("dang");
         alert("Wrong private key.");
     }
 }
