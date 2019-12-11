@@ -101,13 +101,21 @@ function confirmAction(url, newEntryId, newEntryPassword){
     let generatedKeysPairingsDict = JSON.parse(localStorage.getItem("generatedKeys"));
     let enteredKeysPairingsDict = JSON.parse(localStorage.getItem("enteredKeys"));
     let publicKeyText = localStorage.getItem("publicKey");
+    let checked = false;
     if (generatedKeysPairingsDict){
-        let generatedPrivateKey = generatedKeysPairingsDict[publicKeyText];
-        requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, generatedPrivateKey, "generated");
+        if (publicKeyText in generatedKeysPairingsDict){
+            let generatedPrivateKey = generatedKeysPairingsDict[publicKeyText];
+            requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, generatedPrivateKey, "generated");
+        }
     } else if (enteredKeysPairingsDict){
-        let enteredPrivateKey = enteredKeysPairingsDict[publicKeyText];
-        requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, enteredPrivateKey, "entered");
-    } else {
+        if (publicKeyText in enteredKeysPairingsDict){
+            let enteredPrivateKey = enteredKeysPairingsDict[publicKeyText];
+            requestSessionsGetKeyAuth(url, newEntryId, publicKeyText, enteredPrivateKey, "entered");
+        }
+    } 
+
+    // do password entry if checked is false 
+    if (!checked){
         let passwordSet = confirm("Try user entered password? (\"Ok\" to enter password, \"Cancel\" to enter private key)");
         if (passwordSet == true){
             console.log("hello");
